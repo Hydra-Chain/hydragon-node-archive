@@ -1,11 +1,10 @@
-FROM rsantev/polygon-edge:latest
-
-RUN polygon-edge genesis --pos --ibft-validator 0x404aaeB3f8794A7D3CD67A02C9dC6b99035CcAC7:0xadf5df428ca1e3b95f15773c17c4cb5d576af118c7c74ff72d2a5298d9bca68fa7f88698535ff04454d22c45c14e938b --ibft-validator 0x71a2376Fa1f3501a3c49C689806E157691e140eA:0x9577566c4df96990e6947fc1ac40b74bbe4fb52c10b291c41fdc99e641282241e9eb8eca91b6a9fb3ac42122f2615156 --bootnode /ip4/127.0.0.1/tcp/10001/p2p/16Uiu2HAmQPPsrTo6Xi7S9mLy6PZbFw6BXDhKBcnaYc8UJac3YMbf --bootnode /ip4/127.0.0.1/tcp/20001/p2p/16Uiu2HAm9MLRDnBX6VqGQCDhN5Uecc5GUKNwcbLD7WRWhCgs9mvL
+FROM 0xpolygon/polygon-edge:latest
 
 RUN polygon-edge secrets init --data-dir data-dir
 
-COPY ./test.sh ./test.sh
+COPY genesis.json genesis.json 
 
+COPY test.sh test.sh
 
 # Node.js and Staking
 RUN apk add --update npm
@@ -13,9 +12,11 @@ RUN apk add --no-cache git
 RUN mkdir staking && cd ./staking && git clone https://github.com/R-Santev/staking-contracts.git && cd ./staking-contracts && git checkout scale && npm install
 ENV JSONRPC_URL=http://localhost:10002
 ENV STAKING_CONTRACT_ADDRESS=0x0000000000000000000000000000000000001001
-ENV MAX_VALIDATOR_COUNT=10
+ENV MAX_VALIDATOR_COUNT=500
 ENV MIN_VALIDATOR_COUNT=2
-ENV MAIN_NODE_KEY=bbdf1dc839add5c303231df3a9aaa862299f0bb66e5a614cc5b284abcc3297ad
+
+ARG MAIN_NODE_KEY_ARG
+ENV MAIN_NODE_KEY=$MAIN_NODE_KEY_ARG
 
 RUN cd ./../..
 
