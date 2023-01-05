@@ -2,9 +2,9 @@ FROM 0xpolygon/polygon-edge:latest
 
 RUN polygon-edge secrets init --data-dir data-dir
 
-COPY genesis.json genesis.json 
+COPY genesis.json .
 
-COPY test.sh test.sh
+COPY run.sh .
 
 # Node.js and Staking
 RUN apk add --update npm
@@ -15,20 +15,23 @@ ENV STAKING_CONTRACT_ADDRESS=0x0000000000000000000000000000000000001001
 ENV MAX_VALIDATOR_COUNT=500
 ENV MIN_VALIDATOR_COUNT=2
 
-ARG MAIN_NODE_KEY_ARG
-ENV MAIN_NODE_KEY=$MAIN_NODE_KEY_ARG
+ENV MAIN_NODE_KEY=243bd03210350fb5f0345d28a08ab1a329d7318874b9f5f5d0f7e8736eeb364d
+
+# ARG GRPC_PORT
+# ENV GRPC_PORT=$GRPC_PORT
+
+# ARG LIBP2P_PORT
+# ENV LIBP2P_PORT=$LIBP2P_PORT
+
+# ARG JSONRPC_PORT
+# ENV JSONRPC_PORT=$JSONRPC_PORT
 
 RUN cd ./../..
 
-COPY ./staking.sh ./staking.sh
+COPY staking.sh .
 RUN /staking.sh
 
 RUN cd ./staking/staking-contracts npm run build && npm run fund_node && npm run stake && npm run register-blskey
 
-RUN cd ./../..
-
-COPY ./check.sh ./check.sh
-RUN /check.sh
-
-EXPOSE 30000 30001 30002
-ENTRYPOINT "./test.sh"
+EXPOSE 10000 10001 10002
+ENTRYPOINT "./run.sh"

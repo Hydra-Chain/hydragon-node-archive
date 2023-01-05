@@ -1,1 +1,1 @@
-polygon-edge server --data-dir ./data-dir --chain genesis.json --grpc-address :30000 --libp2p :30001 --jsonrpc :30002 --seal
+polygon-edge server --data-dir ./data-dir --chain genesis.json --grpc-address :$GRPC_PORT --libp2p :$LIBP2P_PORT --jsonrpc :$JSONRPC_PORT --seal

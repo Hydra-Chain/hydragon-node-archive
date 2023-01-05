@@ -1,0 +1,29 @@
+version: "3.9"
+services:
+  bootnode:
+    hostname: 'bootnode'
+    build:
+      context: .
+      dockerfile: ./bootnode/Dockerfile.boot
+    ports:
+      - "10000:10000"
+      - "10001:10001"
+      - "10002:10002"
+    deploy:
+      mode: global
+  nodes:
+    build:
+      context: .
+      dockerfile: ./Dockerfile.test
+    ports:
+      - "10000"
+      - "10001"
+      - "10002"
+    deploy:
+      mode: replicated
+      replicas: 3
+      endpoint_mode: vip
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 50M
