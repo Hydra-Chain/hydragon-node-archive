@@ -46,7 +46,7 @@ services:
       - "10002"
     deploy:
       mode: replicated
-      replicas: 3
+      replicas: 200
       # endpoint_mode: vip
       # resources:
       #   limits:
