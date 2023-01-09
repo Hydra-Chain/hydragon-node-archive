@@ -31,7 +31,7 @@ services:
     ports:
       - "5000:5000"
     environment:
-      - BOOTNODE_KEY=243bd03210350fb5f0345d28a08ab1a329d7318874b9f5f5d0f7e8736eeb364d
+      - BOOTNODE_KEY=bbdf1dc839add5c303231df3a9aaa862299f0bb66e5a614cc5b284abcc3297ad
       - PROVIDER_URL=http://bootnode-one:10002
     depends_on:
       - bootnode-one
