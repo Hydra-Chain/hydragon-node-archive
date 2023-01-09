@@ -62,6 +62,11 @@ sudo docker stop <Container ID>
 
 ## Additional Notes
 
+### Build for release image
+```
+CGO_ENABLED=0 GOOS=linux go build -o polygon-edge -a -installsuffix cgo  main.go
+```
+
 ### Run a Staking Node
 
 #### Prerequesits:

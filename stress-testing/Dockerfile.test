@@ -1,4 +1,4 @@
-FROM 0xpolygon/polygon-edge:latest
+FROM rsantev/polygon-edge:latest
 
 COPY genesis.json .
 COPY run.sh .

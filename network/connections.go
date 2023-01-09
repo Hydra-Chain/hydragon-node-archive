@@ -1,6 +1,7 @@
 package network
 
 import (
+	"fmt"
 	"sync/atomic"
 
 	"github.com/libp2p/go-libp2p/core/network"
@@ -94,6 +95,12 @@ func (ci *ConnectionInfo) HasFreeOutboundConn() bool {
 // It takes into account the number of current (active) inbound connections and
 // the number of pending inbound connections [Thread safe]
 func (ci *ConnectionInfo) HasFreeInboundConn() bool {
+	fmt.Println("CUSTOM_DEBUG")
+	fmt.Println("HasFreeInboundConn")
+	fmt.Println(ci.GetInboundConnCount())
+	fmt.Println(ci.GetPendingInboundConnCount())
+	fmt.Println(ci.maxInboundConnCount())
+
 	return ci.GetInboundConnCount()+ci.GetPendingInboundConnCount() < ci.maxInboundConnCount()
 }
 
