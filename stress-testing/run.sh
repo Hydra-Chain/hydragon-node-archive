@@ -8,6 +8,8 @@ printf "PRIVATE_KEYS=%s\n" $key >> ./staking/staking-contracts/.env
 output=$(polygon-edge secrets output --data-dir data-dir)
 bls_key=$(echo $output| cut -d' ' -f 12)
 printf "BLS_PUBLIC_KEY=%s\n" $bls_key >> ./staking/staking-contracts/.env
+
+# Extract node address to be used in fund-node request
 address=$(echo $output| cut -d' ' -f 7)
 body="{\"address\": \"${address}\"}"
 echo $body

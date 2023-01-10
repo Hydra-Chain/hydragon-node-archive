@@ -1,5 +1,15 @@
-# How to generate a "stress test" nodes setup?
-## Step
+# How run a network of nodes with one command?
+## Steps
+1. Navigate to stress-testing folder
+```
+cd stress-testing
+```
+2. Start docker compose file with build flag
+```
+docker compose up --build
+```
+
+# Previous versions notes
 ### Start main node docker container
 1. Build container
 ```
