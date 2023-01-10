@@ -1,6 +1,6 @@
 peers.json
-genesis.json
 manifest.json
+./genesis.json
 secretsManagerConfig.json
 *-packr.go
 config*.json
