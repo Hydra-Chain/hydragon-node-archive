@@ -1,7 +1,6 @@
 version: "3.9"
 services:
   bootnode-one:
-    # hostname: 'bootnode'
     build:
       context: .
       dockerfile: ./bootnodes/Dockerfile.boot
@@ -12,10 +11,7 @@ services:
       - "10001:10001"
       - "10002:10002"
     pull_policy: build
-    # deploy:
-    #   mode: global
   bootnode-two:
-    # hostname: 'bootnode'
     build:
       context: .
       dockerfile: ./bootnodes/Dockerfile.boot
@@ -26,8 +22,6 @@ services:
       - "20001:10001"
       - "20002:10002"
     pull_policy: build
-    # deploy:
-    #   mode: global
   tx-executor:
     image: rsantev/edge-tx-executor:latest
     ports:
@@ -50,10 +44,8 @@ services:
     deploy:
       mode: replicated
       replicas: 198
-      # endpoint_mode: vip
-      # resources:
-      #   limits:
-      #     cpus: '0.50'
-      #     memory: 50M
+      resources:
+        limits:
+          cpus: '0.50'
     depends_on:
       - tx-executor
