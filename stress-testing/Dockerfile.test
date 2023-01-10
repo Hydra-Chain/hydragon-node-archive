@@ -7,7 +7,7 @@ COPY run.sh .
 RUN apk add --update npm
 RUN apk add --no-cache git
 RUN apk add --no-cache curl
-RUN mkdir staking && cd ./staking && git clone https://github.com/R-Santev/staking-contracts.git && cd ./staking-contracts && git checkout scale && npm install && cd ./../..
+RUN mkdir staking && cd ./staking && git clone https://github.com/R-Santev/staking-contracts.git && cd ./staking-contracts && git checkout main && npm install && cd ./../..
 ENV JSONRPC_URL=http://bootnode-one:10002
 ENV STAKING_CONTRACT_ADDRESS=0x0000000000000000000000000000000000001001
 ENV MAX_VALIDATOR_COUNT=500
