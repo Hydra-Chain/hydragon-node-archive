@@ -1,0 +1,51 @@
+version: "3.9"
+services:
+  bootnode-one:
+    build:
+      context: .
+      dockerfile: ./bootnodes/Dockerfile.boot
+      args:
+        BOOTNODE_FOLDER: bootnode-one
+    ports:
+      - "10000:10000"
+      - "10001:10001"
+      - "10002:10002"
+    pull_policy: build
+  bootnode-two:
+    build:
+      context: .
+      dockerfile: ./bootnodes/Dockerfile.boot
+      args:
+        BOOTNODE_FOLDER: bootnode-two
+    ports:
+      - "20000:10000"
+      - "20001:10001"
+      - "20002:10002"
+    pull_policy: build
+  tx-executor:
+    image: rsantev/edge-tx-executor:latest
+    ports:
+      - "5000:5000"
+    environment:
+      - BOOTNODE_KEY=243bd03210350fb5f0345d28a08ab1a329d7318874b9f5f5d0f7e8736eeb364d
+      - PROVIDER_URL=http://bootnode-one:10002
+    depends_on:
+      - bootnode-one
+      - bootnode-two
+  nodes:
+    build:
+      context: .
+      dockerfile: ./Dockerfile.test
+    ports:
+      - "10000"
+      - "10001"
+      - "10002"
+    pull_policy: build
+    deploy:
+      mode: replicated
+      replicas: 100
+      resources:
+        limits:
+          cpus: '0.50'
+    depends_on:
+      - tx-executor
