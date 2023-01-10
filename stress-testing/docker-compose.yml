@@ -24,6 +24,7 @@ services:
       - "20000:10000"
       - "20001:10001"
       - "20002:10002"
+    pull_policy: build
     # deploy:
     #   mode: global
   tx-executor:
