@@ -49,7 +49,7 @@ services:
     pull_policy: build
     deploy:
       mode: replicated
-      replicas: 50
+      replicas: 198
       # endpoint_mode: vip
       # resources:
       #   limits:
