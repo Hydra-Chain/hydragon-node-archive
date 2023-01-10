@@ -12,8 +12,8 @@ address=$(echo $output| cut -d' ' -f 7)
 body="{\"address\": \"${address}\"}"
 echo $body
 
-# wait  5 minutes so the tx-executor would be started
-sleep 300
+# wait  1 minutes so the tx-executor would be started
+sleep 60
 # Fund node request
 curl -v -XPOST -H 'Content-type: application/json' -d "$body" 'http://tx-executor:5000/fund-node'
 
