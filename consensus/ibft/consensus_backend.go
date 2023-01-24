@@ -179,6 +179,7 @@ func (i *backendIBFT) buildBlock(parent *types.Header) (*types.Block, error) {
 
 	header.GasLimit = gasLimit
 
+	// TODO: Find out how this works
 	if err := i.currentHooks.ModifyHeader(header, i.currentSigner.Address()); err != nil {
 		return nil, err
 	}
