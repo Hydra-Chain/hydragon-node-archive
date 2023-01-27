@@ -88,8 +88,8 @@ func TestFetchBLSValidators(t *testing.T) {
 
 	var (
 		blsValidators = validators.NewBLSValidatorSet(
-			validators.NewBLSValidator(addr1, testBLSPubKey1),
-			validators.NewBLSValidator(addr2, []byte{}), // validator 2 has not set BLS Public Key
+			validators.NewBLSValidator(addr1, testBLSPubKey1, *OneHydraBig),
+			validators.NewBLSValidator(addr2, []byte{}, *OneHydraBig), // validator 2 has not set BLS Public Key
 		)
 	)
 
@@ -117,7 +117,7 @@ func TestFetchBLSValidators(t *testing.T) {
 			),
 			from: types.ZeroAddress,
 			expectedRes: validators.NewBLSValidatorSet(
-				validators.NewBLSValidator(addr1, testBLSPubKey1),
+				validators.NewBLSValidator(addr1, testBLSPubKey1, *OneHydraBig),
 			),
 			expectedErr: nil,
 		},

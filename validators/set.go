@@ -2,14 +2,21 @@ package validators
 
 import (
 	"encoding/json"
+	"errors"
+	"math/big"
 
 	"github.com/0xPolygon/polygon-edge/types"
 	"github.com/umbracle/fastrlp"
 )
 
+var (
+	ErrInvalidTVotingPower = errors.New("invalid total voting power for validator set")
+)
+
 type Set struct {
-	ValidatorType ValidatorType
-	Validators    []Validator
+	ValidatorType    ValidatorType
+	Validators       []Validator
+	totalVotingPower big.Int
 }
 
 // Type returns the type of validator
@@ -92,6 +99,8 @@ func (s *Set) Add(val Validator) error {
 
 	s.Validators = append(s.Validators, val)
 
+	s.increaseVotingPower(val.VotingPower())
+
 	return nil
 }
 
@@ -108,6 +117,10 @@ func (s *Set) Del(val Validator) error {
 	}
 
 	s.Validators = append(s.Validators[:index], s.Validators[index+1:]...)
+
+	if err := s.decreaseVotingPower(val.VotingPower()); err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -195,6 +208,42 @@ func (s *Set) UnmarshalJSON(data []byte) error {
 	}
 
 	s.Validators = validators
+
+	return nil
+}
+
+// TotalVotingPower returns the sum of the voting powers of all validators.
+// It recomputes the total voting power if required.
+func (s *Set) TotalVotingPower() big.Int {
+	if s.totalVotingPower.Cmp(big.NewInt(0)) == 0 {
+		s.updateTotalVotingPower()
+	}
+
+	return s.totalVotingPower
+}
+
+// Forces recalculation of the set's total voting power.
+func (s *Set) updateTotalVotingPower() {
+	sum := big.NewInt(0)
+	for _, val := range s.Validators {
+		valVotingPower := val.VotingPower()
+		sum = sum.Add(sum, &valVotingPower)
+	}
+
+	s.totalVotingPower = *sum
+}
+
+func (s *Set) increaseVotingPower(amount big.Int) {
+	s.totalVotingPower = *s.totalVotingPower.Add(&s.totalVotingPower, &amount)
+}
+
+func (s *Set) decreaseVotingPower(amount big.Int) error {
+	newVotingPower := *s.totalVotingPower.Sub(&s.totalVotingPower, &amount)
+	if newVotingPower.Cmp(big.NewInt(0)) == -1 {
+		return ErrInvalidTVotingPower
+	}
+
+	s.totalVotingPower = newVotingPower
 
 	return nil
 }

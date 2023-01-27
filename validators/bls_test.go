@@ -63,8 +63,8 @@ func TestNewBLSValidator(t *testing.T) {
 
 	assert.Equal(
 		t,
-		&BLSValidator{addr1, testBLSPubKey1},
-		NewBLSValidator(addr1, testBLSPubKey1),
+		&BLSValidator{addr1, testBLSPubKey1, *OneHydraBig},
+		NewBLSValidator(addr1, testBLSPubKey1, *OneHydraBig),
 	)
 }
 
@@ -74,7 +74,7 @@ func TestBLSValidatorType(t *testing.T) {
 	assert.Equal(
 		t,
 		BLSValidatorType,
-		NewBLSValidator(addr1, testBLSPubKey1).Type(),
+		NewBLSValidator(addr1, testBLSPubKey1, *OneHydraBig).Type(),
 	)
 }
 
@@ -84,11 +84,12 @@ func TestBLSValidatorString(t *testing.T) {
 	assert.Equal(
 		t,
 		fmt.Sprintf(
-			"%s:%s",
+			"%s:%s (Staked Balance: %s)",
 			addr1.String(),
 			"0x"+hex.EncodeToString(testBLSPubKey1),
+			OneHydraBig.Text(10),
 		),
-		NewBLSValidator(addr1, testBLSPubKey1).String(),
+		NewBLSValidator(addr1, testBLSPubKey1, *OneHydraBig).String(),
 	)
 }
 
@@ -98,14 +99,14 @@ func TestBLSValidatorAddr(t *testing.T) {
 	assert.Equal(
 		t,
 		addr1,
-		NewBLSValidator(addr1, testBLSPubKey1).Addr(),
+		NewBLSValidator(addr1, testBLSPubKey1, *OneHydraBig).Addr(),
 	)
 }
 
 func TestBLSValidatorCopy(t *testing.T) {
 	t.Parallel()
 
-	v1 := NewBLSValidator(addr1, testBLSPubKey1)
+	v1 := NewBLSValidator(addr1, testBLSPubKey1, *OneHydraBig)
 	v2 := v1.Copy()
 
 	assert.Equal(t, v1, v2)
@@ -129,20 +130,26 @@ func TestBLSValidatorEqual(t *testing.T) {
 	}{
 		{
 			name:     "equal",
-			val1:     NewBLSValidator(addr1, testBLSPubKey1),
-			val2:     NewBLSValidator(addr1, testBLSPubKey1),
+			val1:     NewBLSValidator(addr1, testBLSPubKey1, *OneHydraBig),
+			val2:     NewBLSValidator(addr1, testBLSPubKey1, *OneHydraBig),
 			expected: true,
 		},
 		{
 			name:     "addr does not equal",
-			val1:     NewBLSValidator(addr1, testBLSPubKey1),
-			val2:     NewBLSValidator(addr2, testBLSPubKey1),
+			val1:     NewBLSValidator(addr1, testBLSPubKey1, *OneHydraBig),
+			val2:     NewBLSValidator(addr2, testBLSPubKey1, *OneHydraBig),
 			expected: false,
 		},
 		{
 			name:     "public key does not equal",
-			val1:     NewBLSValidator(addr1, testBLSPubKey1),
-			val2:     NewBLSValidator(addr1, testBLSPubKey2),
+			val1:     NewBLSValidator(addr1, testBLSPubKey1, *OneHydraBig),
+			val2:     NewBLSValidator(addr1, testBLSPubKey2, *OneHydraBig),
+			expected: false,
+		},
+		{
+			name:     "voting power does not equal",
+			val1:     NewBLSValidator(addr1, testBLSPubKey1, *OneHydraBig.Add(OneHydraBig, OneHydraBig)),
+			val2:     NewBLSValidator(addr1, testBLSPubKey1, *OneHydraBig),
 			expected: false,
 		},
 	}
@@ -165,7 +172,7 @@ func TestBLSValidatorEqual(t *testing.T) {
 func TestBLSValidatorMarshalAndUnmarshal(t *testing.T) {
 	t.Parallel()
 
-	val1 := NewBLSValidator(addr1, testBLSPubKey1)
+	val1 := NewBLSValidator(addr1, testBLSPubKey1, *OneHydraBig)
 
 	marshalRes := types.MarshalRLPTo(val1.MarshalRLPWith, nil)
 
@@ -182,7 +189,7 @@ func TestBLSValidatorMarshalAndUnmarshal(t *testing.T) {
 func TestBLSValidatorBytes(t *testing.T) {
 	t.Parallel()
 
-	val := NewBLSValidator(addr1, testBLSPubKey1)
+	val := NewBLSValidator(addr1, testBLSPubKey1, *OneHydraBig)
 
 	// result of Bytes() equals the data encoded in RLP
 	assert.Equal(
@@ -195,7 +202,7 @@ func TestBLSValidatorBytes(t *testing.T) {
 func TestBLSValidatorFromBytes(t *testing.T) {
 	t.Parallel()
 
-	val1 := NewBLSValidator(addr1, testBLSPubKey1)
+	val1 := NewBLSValidator(addr1, testBLSPubKey1, *OneHydraBig)
 	marshalledData := types.MarshalRLPTo(val1.MarshalRLPWith, nil)
 
 	val2 := new(BLSValidator)
@@ -207,5 +214,15 @@ func TestBLSValidatorFromBytes(t *testing.T) {
 		t,
 		val1,
 		val2,
+	)
+}
+
+func TestBLSValidatorVotingPower(t *testing.T) {
+	t.Parallel()
+
+	assert.Equal(
+		t,
+		*OneHydraBig,
+		NewBLSValidator(addr1, testBLSPubKey1, *OneHydraBig).VotingPower(),
 	)
 }

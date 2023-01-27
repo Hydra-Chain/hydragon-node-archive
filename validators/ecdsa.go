@@ -1,6 +1,8 @@
 package validators
 
 import (
+	"math/big"
+
 	"github.com/0xPolygon/polygon-edge/types"
 	"github.com/umbracle/fastrlp"
 )
@@ -69,4 +71,10 @@ func (v *ECDSAValidator) SetFromBytes(input []byte) error {
 	v.Address = types.BytesToAddress(input)
 
 	return nil
+}
+
+// Addr returns the validator Voting Power (Staked Balance)
+// Voting Power is not implemented in ECD
+func (v *ECDSAValidator) VotingPower() big.Int {
+	return *big.NewInt(0)
 }

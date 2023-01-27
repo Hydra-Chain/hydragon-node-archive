@@ -2,6 +2,7 @@ package contract
 
 import (
 	"errors"
+	"math/big"
 	"testing"
 
 	"github.com/0xPolygon/polygon-edge/chain"
@@ -31,6 +32,7 @@ var (
 		MaxValidatorCount: 10,
 	}
 	testBlockGasLimit uint64 = 10000000
+	OneHydraBig              = big.NewInt(1000000000000000000)
 )
 
 func newTestBLSKeyBytes() validators.BLSValidatorPublicKey {
@@ -243,8 +245,8 @@ func TestContractValidatorStoreGetValidators(t *testing.T) {
 		)
 
 		blsValidators = validators.NewBLSValidatorSet(
-			validators.NewBLSValidator(addr1, testBLSPubKey1),
-			validators.NewBLSValidator(addr2, testBLSPubKey2),
+			validators.NewBLSValidator(addr1, testBLSPubKey1, *OneHydraBig),
+			validators.NewBLSValidator(addr2, testBLSPubKey2, *OneHydraBig),
 		)
 
 		transitionForECDSAValidators = newTestTransitionWithPredeployedStakingContract(
@@ -468,8 +470,8 @@ func TestContractValidatorStore_CacheChange(t *testing.T) {
 		)
 
 		blsValidators = validators.NewBLSValidatorSet(
-			validators.NewBLSValidator(addr1, testBLSPubKey1),
-			validators.NewBLSValidator(addr2, testBLSPubKey2),
+			validators.NewBLSValidator(addr1, testBLSPubKey1, *OneHydraBig),
+			validators.NewBLSValidator(addr2, testBLSPubKey2, *OneHydraBig),
 		)
 	)
 

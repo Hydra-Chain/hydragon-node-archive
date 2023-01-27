@@ -17,7 +17,8 @@ import (
 )
 
 var (
-	errTest = errors.New("test error")
+	OneHydraBig = big.NewInt(1000000000000000000)
+	errTest     = errors.New("test error")
 )
 
 // fakeValidator is a invalid validator
@@ -1863,7 +1864,7 @@ func TestSnapshotValidatorStore_addCandidate(t *testing.T) {
 				blsValidator2,
 			),
 			// candidate just has to have the Address field only
-			candidate:   validators.NewBLSValidator(blsValidator2.Addr(), nil),
+			candidate:   validators.NewBLSValidator(blsValidator2.Addr(), nil, *OneHydraBig),
 			authorize:   false,
 			expectedErr: nil,
 			finalCandidates: []*store.Candidate{

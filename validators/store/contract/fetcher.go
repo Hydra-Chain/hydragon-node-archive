@@ -2,6 +2,7 @@ package contract
 
 import (
 	"fmt"
+	"math/big"
 
 	"github.com/0xPolygon/polygon-edge/contracts/staking"
 	"github.com/0xPolygon/polygon-edge/crypto"
@@ -61,6 +62,8 @@ func FetchBLSValidators(
 		return nil, err
 	}
 
+	// TODO: Query StakedBalances  and apply them when new contract is implemented
+
 	blsValidators := validators.NewBLSValidatorSet()
 
 	for idx := range valAddrs {
@@ -74,6 +77,7 @@ func FetchBLSValidators(
 		if err := blsValidators.Add(validators.NewBLSValidator(
 			valAddrs[idx],
 			blsPublicKeys[idx],
+			*big.NewInt(1000000000000000000), // 1 eth constant value - must be changed when new contract is developed
 		)); err != nil {
 			return nil, err
 		}

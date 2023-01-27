@@ -2,6 +2,7 @@ package signer
 
 import (
 	"errors"
+	"math/big"
 
 	"github.com/0xPolygon/polygon-edge/crypto"
 	"github.com/0xPolygon/polygon-edge/types"
@@ -46,14 +47,14 @@ type Signer interface {
 	VerifyCommittedSeals(
 		header *types.Header,
 		validators validators.Validators,
-		quorumSize int,
+		quorumSize big.Int,
 	) error
 
 	// ParentCommittedSeals
 	VerifyParentCommittedSeals(
 		parent, header *types.Header,
 		parentValidators validators.Validators,
-		quorum int,
+		quorum big.Int,
 		mustExist bool,
 	) error
 
@@ -222,7 +223,7 @@ func (s *SignerImpl) WriteCommittedSeals(
 func (s *SignerImpl) VerifyCommittedSeals(
 	header *types.Header,
 	validators validators.Validators,
-	quorumSize int,
+	quorumSize big.Int,
 ) error {
 	extra, err := s.GetIBFTExtra(header)
 	if err != nil {
@@ -238,7 +239,7 @@ func (s *SignerImpl) VerifyCommittedSeals(
 		wrapCommitHash(hash[:]),
 	)
 
-	numSeals, err := s.keyManager.VerifyCommittedSeals(
+	votingPower, err := s.keyManager.VerifyCommittedSeals(
 		extra.CommittedSeals,
 		rawMsg,
 		validators,
@@ -247,7 +248,7 @@ func (s *SignerImpl) VerifyCommittedSeals(
 		return err
 	}
 
-	if numSeals < quorumSize {
+	if votingPower.Cmp(&quorumSize) == -1 {
 		return ErrNotEnoughCommittedSeals
 	}
 
@@ -258,7 +259,7 @@ func (s *SignerImpl) VerifyCommittedSeals(
 func (s *SignerImpl) VerifyParentCommittedSeals(
 	parent, header *types.Header,
 	parentValidators validators.Validators,
-	quorum int,
+	quorum big.Int,
 	mustExist bool,
 ) error {
 	parentCommittedSeals, err := s.GetParentCommittedSeals(header)
@@ -281,7 +282,7 @@ func (s *SignerImpl) VerifyParentCommittedSeals(
 		wrapCommitHash(parent.Hash.Bytes()),
 	)
 
-	numSeals, err := s.keyManager.VerifyCommittedSeals(
+	votingPower, err := s.keyManager.VerifyCommittedSeals(
 		parentCommittedSeals,
 		rawMsg,
 		parentValidators,
@@ -290,7 +291,7 @@ func (s *SignerImpl) VerifyParentCommittedSeals(
 		return err
 	}
 
-	if numSeals < quorum {
+	if votingPower.Cmp(&quorum) == -1 {
 		return ErrNotEnoughCommittedSeals
 	}
 

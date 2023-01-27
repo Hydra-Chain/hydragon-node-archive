@@ -29,8 +29,10 @@ var (
 		testAddr2,
 	)
 
-	blsValidator1 = validators.NewBLSValidator(testAddr1, testBLSPubKey1)
-	blsValidator2 = validators.NewBLSValidator(testAddr2, testBLSPubKey2)
+	OneHydraBig = big.NewInt(1000000000000000000)
+
+	blsValidator1 = validators.NewBLSValidator(testAddr1, testBLSPubKey1, *OneHydraBig)
+	blsValidator2 = validators.NewBLSValidator(testAddr2, testBLSPubKey2, *OneHydraBig)
 
 	ecdsaValidators = validators.NewECDSAValidatorSet(
 		ecdsaValidator1,

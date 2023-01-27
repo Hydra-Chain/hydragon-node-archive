@@ -60,8 +60,8 @@ func TestSetEqual(t *testing.T) {
 				NewECDSAValidator(addr2),
 			),
 			vals2: NewBLSValidatorSet(
-				NewBLSValidator(addr1, testBLSPubKey1),
-				NewBLSValidator(addr2, testBLSPubKey2),
+				NewBLSValidator(addr1, testBLSPubKey1, *OneHydraBig),
+				NewBLSValidator(addr2, testBLSPubKey2, *OneHydraBig),
 			),
 			expected: false,
 		},
@@ -115,12 +115,12 @@ func TestSetEqual(t *testing.T) {
 		{
 			name: "not equal (BLSValidators)",
 			vals1: NewBLSValidatorSet(
-				NewBLSValidator(addr1, testBLSPubKey1),
-				NewBLSValidator(addr2, testBLSPubKey2),
+				NewBLSValidator(addr1, testBLSPubKey1, *OneHydraBig),
+				NewBLSValidator(addr2, testBLSPubKey2, *OneHydraBig),
 			),
 			vals2: NewBLSValidatorSet(
-				NewBLSValidator(addr1, testBLSPubKey1),
-				NewBLSValidator(addr1, testBLSPubKey1),
+				NewBLSValidator(addr1, testBLSPubKey1, *OneHydraBig),
+				NewBLSValidator(addr1, testBLSPubKey1, *OneHydraBig),
 			),
 			expected: false,
 		},
@@ -158,8 +158,8 @@ func TestSetCopy(t *testing.T) {
 		{
 			name: "BLSValidators",
 			validators: NewBLSValidatorSet(
-				NewBLSValidator(addr1, testBLSPubKey1),
-				NewBLSValidator(addr1, testBLSPubKey1),
+				NewBLSValidator(addr1, testBLSPubKey1, *OneHydraBig),
+				NewBLSValidator(addr1, testBLSPubKey1, *OneHydraBig),
 			),
 		},
 	}
@@ -234,8 +234,8 @@ func TestSetIndex(t *testing.T) {
 		{
 			name: "BLSValidators",
 			validators: NewBLSValidatorSet(
-				NewBLSValidator(addr1, testBLSPubKey1),
-				NewBLSValidator(addr2, testBLSPubKey2),
+				NewBLSValidator(addr1, testBLSPubKey1, *OneHydraBig),
+				NewBLSValidator(addr2, testBLSPubKey2, *OneHydraBig),
 			),
 			addr:     addr2,
 			expected: 1,
@@ -287,8 +287,8 @@ func TestSetIncludes(t *testing.T) {
 		{
 			name: "BLSValidators",
 			validators: NewBLSValidatorSet(
-				NewBLSValidator(addr1, testBLSPubKey1),
-				NewBLSValidator(addr2, testBLSPubKey2),
+				NewBLSValidator(addr1, testBLSPubKey1, *OneHydraBig),
+				NewBLSValidator(addr2, testBLSPubKey2, *OneHydraBig),
 			),
 			addr:     addr2,
 			expected: true,
@@ -334,7 +334,7 @@ func TestSetAdd(t *testing.T) {
 			validators: NewECDSAValidatorSet(
 				NewECDSAValidator(addr1),
 			),
-			newValidator: NewBLSValidator(addr2, testBLSPubKey2),
+			newValidator: NewBLSValidator(addr2, testBLSPubKey2, *OneHydraBig),
 			expectedErr:  ErrMismatchValidatorType,
 			expectedValidators: NewECDSAValidatorSet(
 				NewECDSAValidator(addr1),
@@ -366,13 +366,13 @@ func TestSetAdd(t *testing.T) {
 		{
 			name: "should add BLS Validator",
 			validators: NewBLSValidatorSet(
-				NewBLSValidator(addr1, testBLSPubKey1),
+				NewBLSValidator(addr1, testBLSPubKey1, *OneHydraBig),
 			),
-			newValidator: NewBLSValidator(addr2, testBLSPubKey2),
+			newValidator: NewBLSValidator(addr2, testBLSPubKey2, *OneHydraBig),
 			expectedErr:  nil,
 			expectedValidators: NewBLSValidatorSet(
-				NewBLSValidator(addr1, testBLSPubKey1),
-				NewBLSValidator(addr2, testBLSPubKey2),
+				NewBLSValidator(addr1, testBLSPubKey1, *OneHydraBig),
+				NewBLSValidator(addr2, testBLSPubKey2, *OneHydraBig),
 			),
 		},
 	}
@@ -413,7 +413,7 @@ func TestSetDel(t *testing.T) {
 			validators: NewECDSAValidatorSet(
 				NewECDSAValidator(addr1),
 			),
-			removeValidator: NewBLSValidator(addr2, testBLSPubKey2),
+			removeValidator: NewBLSValidator(addr2, testBLSPubKey2, *OneHydraBig),
 			expectedErr:     ErrMismatchValidatorType,
 			expectedValidators: NewECDSAValidatorSet(
 				NewECDSAValidator(addr1),
@@ -445,13 +445,13 @@ func TestSetDel(t *testing.T) {
 		{
 			name: "should remove BLS Validator",
 			validators: NewBLSValidatorSet(
-				NewBLSValidator(addr1, testBLSPubKey1),
-				NewBLSValidator(addr2, testBLSPubKey2),
+				NewBLSValidator(addr1, testBLSPubKey1, *OneHydraBig),
+				NewBLSValidator(addr2, testBLSPubKey2, *OneHydraBig),
 			),
-			removeValidator: NewBLSValidator(addr2, testBLSPubKey2),
+			removeValidator: NewBLSValidator(addr2, testBLSPubKey2, *OneHydraBig),
 			expectedErr:     nil,
 			expectedValidators: NewBLSValidatorSet(
-				NewBLSValidator(addr1, testBLSPubKey1),
+				NewBLSValidator(addr1, testBLSPubKey1, *OneHydraBig),
 			),
 		},
 	}
@@ -493,7 +493,7 @@ func TestSetMerge(t *testing.T) {
 				NewECDSAValidator(addr1),
 			),
 			validators2: NewBLSValidatorSet(
-				NewBLSValidator(addr1, testBLSPubKey1),
+				NewBLSValidator(addr1, testBLSPubKey1, *OneHydraBig),
 			),
 			expectedErr: ErrMismatchValidatorsType,
 			expectedValidators: NewECDSAValidatorSet(
@@ -517,15 +517,15 @@ func TestSetMerge(t *testing.T) {
 		{
 			name: "should merge BLS Validator",
 			validators1: NewBLSValidatorSet(
-				NewBLSValidator(addr1, testBLSPubKey1),
+				NewBLSValidator(addr1, testBLSPubKey1, *OneHydraBig),
 			),
 			validators2: NewBLSValidatorSet(
-				NewBLSValidator(addr2, testBLSPubKey2),
+				NewBLSValidator(addr2, testBLSPubKey2, *OneHydraBig),
 			),
 			expectedErr: nil,
 			expectedValidators: NewBLSValidatorSet(
-				NewBLSValidator(addr1, testBLSPubKey1),
-				NewBLSValidator(addr2, testBLSPubKey2),
+				NewBLSValidator(addr1, testBLSPubKey1, *OneHydraBig),
+				NewBLSValidator(addr2, testBLSPubKey2, *OneHydraBig),
 			),
 		},
 		{
@@ -583,8 +583,8 @@ func TestSetMarshalAndUnmarshal(t *testing.T) {
 		{
 			name: "BLSValidators",
 			validators: NewBLSValidatorSet(
-				NewBLSValidator(addr1, testBLSPubKey1),
-				NewBLSValidator(addr2, testBLSPubKey2),
+				NewBLSValidator(addr1, testBLSPubKey1, *OneHydraBig),
+				NewBLSValidator(addr2, testBLSPubKey2, *OneHydraBig),
 			),
 		},
 	}

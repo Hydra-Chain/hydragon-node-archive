@@ -58,6 +58,7 @@ func testBLSKeyManagerToBLSValidator(t *testing.T, keyManager KeyManager) *valid
 	return validators.NewBLSValidator(
 		blsKeyManager.Address(),
 		pubkeyBytes,
+		*OneHydraBig,
 	)
 }
 
@@ -381,6 +382,7 @@ func TestBLSKeyManagerVerifyCommittedSeal(t *testing.T) {
 				validators.NewBLSValidator(
 					blsKeyManager1.Address(),
 					blsPublicKeyBytes,
+					*OneHydraBig,
 				),
 			),
 			address:     blsKeyManager1.Address(),
@@ -394,6 +396,7 @@ func TestBLSKeyManagerVerifyCommittedSeal(t *testing.T) {
 				validators.NewBLSValidator(
 					blsKeyManager1.Address(),
 					blsPublicKeyBytes,
+					*OneHydraBig,
 				),
 			),
 			address:     blsKeyManager1.Address(),
@@ -867,6 +870,7 @@ func Test_createAggregatedBLSPubKeys(t *testing.T) {
 				validators.NewBLSValidator(
 					types.StringToAddress("0"),
 					[]byte("fake"),
+					*OneHydraBig,
 				),
 			),
 			new(big.Int).SetBit(new(big.Int), 0, 1),

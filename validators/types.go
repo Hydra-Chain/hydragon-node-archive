@@ -2,6 +2,7 @@ package validators
 
 import (
 	"errors"
+	"math/big"
 
 	"github.com/0xPolygon/polygon-edge/types"
 	"github.com/umbracle/fastrlp"
@@ -48,6 +49,8 @@ type Validator interface {
 	String() string
 	// Return the address of the validator
 	Addr() types.Address
+	// Return the voting power of the validator (staked balance)
+	VotingPower() big.Int
 	// Return of copy of the validator
 	Copy() Validator
 	// Check the same validator or not
@@ -68,6 +71,8 @@ type Validators interface {
 	Type() ValidatorType
 	// Return the size of collection
 	Len() int
+	// Return the total voting power (staked balance) of collection
+	TotalVotingPower() big.Int
 	// Check equality of each element
 	Equal(Validators) bool
 	// Return of the whole collection

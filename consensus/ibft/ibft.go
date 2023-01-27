@@ -81,7 +81,7 @@ type backendIBFT struct {
 	// Dynamic References
 	forkManager       forkManagerInterface  // Manager to hold IBFT Forks
 	currentSigner     signer.Signer         // Signer at current sequence
-	currentValidators validators.Validators // signer at current sequence
+	currentValidators validators.Validators // validators at current sequence
 	currentHooks      fork.HooksInterface   // Hooks at current sequence
 
 	// Configurations

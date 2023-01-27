@@ -19,7 +19,7 @@ var (
 
 	ecdsaValidator1 = validators.NewECDSAValidator(addr1)
 	ecdsaValidator2 = validators.NewECDSAValidator(addr2)
-	blsValidator1   = validators.NewBLSValidator(addr1, testBLSPubKey1)
+	blsValidator1   = validators.NewBLSValidator(addr1, testBLSPubKey1, *OneHydraBig)
 )
 
 func createExampleECDSAVoteJSON(

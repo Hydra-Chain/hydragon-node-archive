@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"math/big"
 
 	"github.com/0xPolygon/polygon-edge/helper/hex"
 	"github.com/0xPolygon/polygon-edge/types"
@@ -42,13 +43,15 @@ func (k *BLSValidatorPublicKey) UnmarshalText(input []byte) error {
 type BLSValidator struct {
 	Address      types.Address
 	BLSPublicKey BLSValidatorPublicKey
+	votingPower  big.Int
 }
 
 // NewBLSValidator is a constructor of BLSValidator
-func NewBLSValidator(addr types.Address, blsPubkey []byte) *BLSValidator {
+func NewBLSValidator(addr types.Address, blsPubkey []byte, stakedBalance big.Int) *BLSValidator {
 	return &BLSValidator{
 		Address:      addr,
 		BLSPublicKey: blsPubkey,
+		votingPower:  stakedBalance,
 	}
 }
 
@@ -61,9 +64,10 @@ func (v *BLSValidator) Type() ValidatorType {
 // Format => [Address]:[BLSPublicKey]
 func (v *BLSValidator) String() string {
 	return fmt.Sprintf(
-		"%s:%s",
+		"%s:%s (Staked Balance: %s)",
 		v.Address.String(),
 		hex.EncodeToHex(v.BLSPublicKey),
+		v.votingPower.Text(10),
 	)
 }
 
@@ -80,6 +84,7 @@ func (v *BLSValidator) Copy() Validator {
 	return &BLSValidator{
 		Address:      v.Address,
 		BLSPublicKey: pubkey,
+		votingPower:  v.votingPower,
 	}
 }
 
@@ -90,10 +95,12 @@ func (v *BLSValidator) Equal(vr Validator) bool {
 		return false
 	}
 
-	return v.Address == vv.Address && bytes.Equal(v.BLSPublicKey, vv.BLSPublicKey)
+	return v.Address == vv.Address && bytes.Equal(v.BLSPublicKey, vv.BLSPublicKey) && v.votingPower.Cmp(&vv.votingPower) == 0
 }
 
 // MarshalRLPWith is a RLP Marshaller
+// Didn't add Voting Power in the RLP format because we don't want to modify the extraData of the block header
+// It is going to work properly only with "contract store" configurations
 func (v *BLSValidator) MarshalRLPWith(arena *fastrlp.Arena) *fastrlp.Value {
 	vv := arena.NewArray()
 
@@ -104,6 +111,8 @@ func (v *BLSValidator) MarshalRLPWith(arena *fastrlp.Arena) *fastrlp.Value {
 }
 
 // UnmarshalRLPFrom is a RLP Unmarshaller
+// Didn't add Voting Power in the unmarshaling because we don't include it in the extraData of the block header
+// It is going to work properly only with "contract store" configurations
 func (v *BLSValidator) UnmarshalRLPFrom(p *fastrlp.Parser, val *fastrlp.Value) error {
 	elems, err := val.GetElems()
 	if err != nil {
@@ -133,4 +142,9 @@ func (v *BLSValidator) Bytes() []byte {
 // SetFromBytes parses given bytes in RLP encode and map to its fields
 func (v *BLSValidator) SetFromBytes(input []byte) error {
 	return types.UnmarshalRlp(v.UnmarshalRLPFrom, input)
+}
+
+// Addr returns the validator Voting Power (Staked Balance)
+func (v *BLSValidator) VotingPower() big.Int {
+	return v.votingPower
 }

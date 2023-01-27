@@ -19,8 +19,8 @@ var (
 
 	ecdsaValidator1 = NewECDSAValidator(addr1)
 	ecdsaValidator2 = NewECDSAValidator(addr2)
-	blsValidator1   = NewBLSValidator(addr1, testBLSPubKey1)
-	blsValidator2   = NewBLSValidator(addr2, testBLSPubKey2)
+	blsValidator1   = NewBLSValidator(addr1, testBLSPubKey1, *OneHydraBig)
+	blsValidator2   = NewBLSValidator(addr2, testBLSPubKey2, *OneHydraBig)
 
 	fakeValidatorType = ValidatorType("fake")
 )

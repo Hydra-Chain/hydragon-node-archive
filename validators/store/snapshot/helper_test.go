@@ -19,9 +19,9 @@ var (
 	ecdsaValidator1 = validators.NewECDSAValidator(addr1)
 	ecdsaValidator2 = validators.NewECDSAValidator(addr2)
 	ecdsaValidator3 = validators.NewECDSAValidator(addr3)
-	blsValidator1   = validators.NewBLSValidator(addr1, testBLSPubKey1)
-	blsValidator2   = validators.NewBLSValidator(addr2, testBLSPubKey2)
-	blsValidator3   = validators.NewBLSValidator(addr3, testBLSPubKey3)
+	blsValidator1   = validators.NewBLSValidator(addr1, testBLSPubKey1, *OneHydraBig)
+	blsValidator2   = validators.NewBLSValidator(addr2, testBLSPubKey2, *OneHydraBig)
+	blsValidator3   = validators.NewBLSValidator(addr3, testBLSPubKey3, *OneHydraBig)
 )
 
 func Test_isAuthorize(t *testing.T) {

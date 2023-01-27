@@ -83,8 +83,8 @@ func TestBLSValidatorsMarshalJSON(t *testing.T) {
 	validators := &Set{
 		ValidatorType: BLSValidatorType,
 		Validators: []Validator{
-			&BLSValidator{addr1, testBLSPubKey1},
-			&BLSValidator{addr2, testBLSPubKey2},
+			&BLSValidator{addr1, testBLSPubKey1, *OneHydraBig},
+			&BLSValidator{addr2, testBLSPubKey2, *OneHydraBig},
 		},
 	}
 
@@ -146,8 +146,8 @@ func TestBLSValidatorsUnmarshalJSON(t *testing.T) {
 		&Set{
 			ValidatorType: BLSValidatorType,
 			Validators: []Validator{
-				&BLSValidator{addr1, testBLSPubKey1},
-				&BLSValidator{addr2, testBLSPubKey2},
+				&BLSValidator{addr1, testBLSPubKey1, *OneHydraBig},
+				&BLSValidator{addr2, testBLSPubKey2, *OneHydraBig},
 			},
 		},
 		validators,

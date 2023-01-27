@@ -4,13 +4,14 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"math/big"
 	"strings"
 
 	"github.com/0xPolygon/polygon-edge/types"
 )
 
 var (
-	ErrInvalidBLSValidatorFormat = errors.New("invalid validator format, expected [Validator Address]:[BLS Public Key]")
+	ErrInvalidBLSValidatorFormat = errors.New("invalid validator format, expected [Validator Address]:[BLS Public Key]:[Staked Amount]")
 )
 
 // NewValidatorFromType instantiates a validator by specified type
@@ -110,7 +111,7 @@ func ParseECDSAValidator(validator string) *ECDSAValidator {
 func ParseBLSValidator(validator string) (*BLSValidator, error) {
 	subValues := strings.Split(validator, ":")
 
-	if len(subValues) != 2 {
+	if len(subValues) != 3 {
 		return nil, ErrInvalidBLSValidatorFormat
 	}
 
@@ -124,8 +125,15 @@ func ParseBLSValidator(validator string) (*BLSValidator, error) {
 		return nil, fmt.Errorf("failed to parse BLS Public Key: %w", err)
 	}
 
+	staked := new(big.Int)
+	staked, succ := staked.SetString(subValues[2], 10)
+	if !succ {
+		return nil, fmt.Errorf("failed to parse Staked Amount: %w", err)
+	}
+
 	return &BLSValidator{
 		Address:      types.BytesToAddress(addrBytes),
 		BLSPublicKey: pubKeyBytes,
+		votingPower:  *staked,
 	}, nil
 }
