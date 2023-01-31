@@ -74,10 +74,16 @@ func FetchBLSValidators(
 			continue
 		}
 
+		// 1 eth constant value - must be changed when new contract is developed
+		votingPower, err := validators.CalculateVotingPower(big.NewInt(1000000000000000000), big.NewInt(0), big.NewInt(85))
+		if err != nil {
+			return nil, err
+		}
+
 		if err := blsValidators.Add(validators.NewBLSValidator(
 			valAddrs[idx],
 			blsPublicKeys[idx],
-			*big.NewInt(1000000000000000000), // 1 eth constant value - must be changed when new contract is developed
+			*votingPower,
 		)); err != nil {
 			return nil, err
 		}

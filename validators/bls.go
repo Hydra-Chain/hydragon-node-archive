@@ -43,7 +43,7 @@ func (k *BLSValidatorPublicKey) UnmarshalText(input []byte) error {
 type BLSValidator struct {
 	Address      types.Address
 	BLSPublicKey BLSValidatorPublicKey
-	votingPower  big.Int
+	VotingPower  big.Int
 }
 
 // NewBLSValidator is a constructor of BLSValidator
@@ -51,7 +51,7 @@ func NewBLSValidator(addr types.Address, blsPubkey []byte, stakedBalance big.Int
 	return &BLSValidator{
 		Address:      addr,
 		BLSPublicKey: blsPubkey,
-		votingPower:  stakedBalance,
+		VotingPower:  stakedBalance,
 	}
 }
 
@@ -67,7 +67,7 @@ func (v *BLSValidator) String() string {
 		"%s:%s (Staked Balance: %s)",
 		v.Address.String(),
 		hex.EncodeToHex(v.BLSPublicKey),
-		v.votingPower.Text(10),
+		v.VotingPower.Text(10),
 	)
 }
 
@@ -84,7 +84,7 @@ func (v *BLSValidator) Copy() Validator {
 	return &BLSValidator{
 		Address:      v.Address,
 		BLSPublicKey: pubkey,
-		votingPower:  v.votingPower,
+		VotingPower:  v.VotingPower,
 	}
 }
 
@@ -95,7 +95,7 @@ func (v *BLSValidator) Equal(vr Validator) bool {
 		return false
 	}
 
-	return v.Address == vv.Address && bytes.Equal(v.BLSPublicKey, vv.BLSPublicKey) && v.votingPower.Cmp(&vv.votingPower) == 0
+	return v.Address == vv.Address && bytes.Equal(v.BLSPublicKey, vv.BLSPublicKey) && v.VotingPower.Cmp(&vv.VotingPower) == 0
 }
 
 // MarshalRLPWith is a RLP Marshaller
@@ -106,6 +106,7 @@ func (v *BLSValidator) MarshalRLPWith(arena *fastrlp.Arena) *fastrlp.Value {
 
 	vv.Set(arena.NewBytes(v.Address.Bytes()))
 	vv.Set(arena.NewCopyBytes(v.BLSPublicKey))
+	vv.Set(arena.NewBigInt(&v.VotingPower))
 
 	return vv
 }
@@ -119,7 +120,7 @@ func (v *BLSValidator) UnmarshalRLPFrom(p *fastrlp.Parser, val *fastrlp.Value) e
 		return err
 	}
 
-	if len(elems) < 2 {
+	if len(elems) < 3 {
 		return fmt.Errorf("incorrect number of elements to decode BLSValidator, expected 2 but found %d", len(elems))
 	}
 
@@ -129,6 +130,10 @@ func (v *BLSValidator) UnmarshalRLPFrom(p *fastrlp.Parser, val *fastrlp.Value) e
 
 	if v.BLSPublicKey, err = elems[1].GetBytes(v.BLSPublicKey); err != nil {
 		return fmt.Errorf("failed to decode BLSPublicKey: %w", err)
+	}
+
+	if err = elems[2].GetBigInt(&v.VotingPower); err != nil {
+		return fmt.Errorf("failed to decode votingPower: %w", err)
 	}
 
 	return nil
@@ -145,6 +150,6 @@ func (v *BLSValidator) SetFromBytes(input []byte) error {
 }
 
 // Addr returns the validator Voting Power (Staked Balance)
-func (v *BLSValidator) VotingPower() big.Int {
-	return v.votingPower
+func (v *BLSValidator) VPower() big.Int {
+	return v.VotingPower
 }

@@ -25,9 +25,9 @@ func CalcMaxFaultyNodes(s validators.Validators) int {
 type QuorumImplementation func(validators.Validators) big.Int
 
 // LegacyQuorumSize returns the legacy quorum size for the given validator set
-// H_MODIFY would not be used - we set the Optimal quorum size formula
+// H_MODIFY legacy is irelevant - we set the Optimal quorum size formula just in case
 func LegacyQuorumSize(set validators.Validators) big.Int {
-	tVotingPower := set.TotalVotingPower()
+	tVotingPower := set.TotalVPower()
 	//	if the number of validators is less than 4,
 	//	then the entire set is required
 	if CalcMaxFaultyNodes(set) == 0 {
@@ -40,18 +40,19 @@ func LegacyQuorumSize(set validators.Validators) big.Int {
 	}
 
 	// (quorum optimal)	Q = ceil(2/3 * N)
-	// H_MODIFY: qorum = Total Voting Power * 2/3 + 1 (Based on Tendermint)
+	// H_MODIFY: qorum = 61.4% of total voting power (voting power * 614/1000)
+	// H_MODIFY: assume that voting power would be always bigger than 15000
 	// TODO: Add unit tests for quorum calc
-	divisible := tVotingPower.Mul(&tVotingPower, big.NewInt(2))
-	twoThirds := divisible.Div(divisible, big.NewInt(3))
-	return *twoThirds.Add(twoThirds, big.NewInt(1))
+	divisible := tVotingPower.Mul(&tVotingPower, big.NewInt(614))
+	res := divisible.Div(divisible, big.NewInt(1000))
+	return *res.Add(res, big.NewInt(1))
 }
 
 // OptimalQuorumSize returns the optimal quorum size for the given validator set
 // H_MODIFY: We change the quorum calculation to be based on the staked balance.
 // That way we anble the delegation functionality
 func OptimalQuorumSize(set validators.Validators) big.Int {
-	tVotingPower := set.TotalVotingPower()
+	tVotingPower := set.TotalVPower()
 	//	if the number of validators is less than 4,
 	//	then the entire set is required
 	if CalcMaxFaultyNodes(set) == 0 {
@@ -64,11 +65,12 @@ func OptimalQuorumSize(set validators.Validators) big.Int {
 	}
 
 	// (quorum optimal)	Q = ceil(2/3 * N)
-	// H_MODIFY: qorum = Total Voting Power * 2/3 + 1 (Based on Tendermint)
+	// H_MODIFY: qorum = 61.4% of total voting power (voting power * 614/1000)
+	// H_MODIFY: assume that voting power would be always bigger than 15000
 	// TODO: Add unit tests for quorum calc
-	divisible := tVotingPower.Mul(&tVotingPower, big.NewInt(2))
-	twoThirds := divisible.Div(divisible, big.NewInt(3))
-	return *twoThirds.Add(twoThirds, big.NewInt(1))
+	divisible := tVotingPower.Mul(&tVotingPower, big.NewInt(614))
+	res := divisible.Div(divisible, big.NewInt(1000))
+	return *res.Add(res, big.NewInt(1))
 }
 
 func CalcProposer(

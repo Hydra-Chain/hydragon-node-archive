@@ -66,13 +66,15 @@ func createExampleBLSVoteJSON(
 		"Authorize": %t,
 		"Candidate": {
 			"Address": "%s",
-			"BLSPublicKey": "%s"
+			"BLSPublicKey": "%s",
+			"VotingPower":%s
 		},
 		"Validator": "%s"
 	}`,
 		authorize,
 		candidate.Address,
 		candidate.BLSPublicKey,
+		&candidate.VotingPower,
 		validator,
 	)
 }

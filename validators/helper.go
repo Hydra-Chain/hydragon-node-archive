@@ -55,14 +55,16 @@ func NewECDSAValidatorSet(ecdsaValidators ...*ECDSAValidator) Validators {
 // NewBLSValidatorSet creates Validator Set for BLSValidator with initialized validators
 func NewBLSValidatorSet(blsValidators ...*BLSValidator) Validators {
 	validators := make([]Validator, len(blsValidators))
-
+	votingPower := big.NewInt(0)
 	for idx, val := range blsValidators {
 		validators[idx] = Validator(val)
+		votingPower.Add(votingPower, &val.VotingPower)
 	}
 
 	return &Set{
-		ValidatorType: BLSValidatorType,
-		Validators:    validators,
+		ValidatorType:    BLSValidatorType,
+		Validators:       validators,
+		TotalVotingPower: *votingPower,
 	}
 }
 
@@ -134,6 +136,26 @@ func ParseBLSValidator(validator string) (*BLSValidator, error) {
 	return &BLSValidator{
 		Address:      types.BytesToAddress(addrBytes),
 		BLSPublicKey: pubKeyBytes,
-		votingPower:  *staked,
+		VotingPower:  *staked,
 	}, nil
+}
+
+// calculateVotingPower calculates the voting power of validator based on both staked and delegated amount
+func CalculateVotingPower(
+	stakedAmount *big.Int,
+	delegatedAmount *big.Int,
+	delegationWeightBps *big.Int, // delegationWeightBps / 1000 = delegation weight exponent
+) (*big.Int, error) {
+	if delegationWeightBps.Cmp(big.NewInt(0)) == -1 || delegationWeightBps.Cmp(big.NewInt(1000)) == 1 {
+		return nil, errors.New("invalid delegation weight bps")
+	}
+
+	denominator := big.NewInt(1000)
+	numerator := delegatedAmount.Mul(delegatedAmount, delegationWeightBps)
+
+	if (numerator.Cmp(denominator)) == -1 {
+		return stakedAmount, nil
+	}
+
+	return stakedAmount.Add(stakedAmount, numerator.Div(numerator, denominator)), nil
 }

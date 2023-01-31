@@ -75,6 +75,6 @@ func (v *ECDSAValidator) SetFromBytes(input []byte) error {
 
 // Addr returns the validator Voting Power (Staked Balance)
 // Voting Power is not implemented in ECD
-func (v *ECDSAValidator) VotingPower() big.Int {
+func (v *ECDSAValidator) VPower() big.Int {
 	return *big.NewInt(0)
 }

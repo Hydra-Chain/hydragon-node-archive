@@ -3,6 +3,7 @@ package validators
 import (
 	"encoding/json"
 	"fmt"
+	"math/big"
 	"strings"
 	"testing"
 
@@ -121,6 +122,7 @@ func TestBLSValidatorCopy(t *testing.T) {
 
 func TestBLSValidatorEqual(t *testing.T) {
 	t.Parallel()
+	twoHydra := big.NewInt(0).Add(OneHydraBig, OneHydraBig)
 
 	tests := []struct {
 		name     string
@@ -148,7 +150,7 @@ func TestBLSValidatorEqual(t *testing.T) {
 		},
 		{
 			name:     "voting power does not equal",
-			val1:     NewBLSValidator(addr1, testBLSPubKey1, *OneHydraBig.Add(OneHydraBig, OneHydraBig)),
+			val1:     NewBLSValidator(addr1, testBLSPubKey1, *twoHydra),
 			val2:     NewBLSValidator(addr1, testBLSPubKey1, *OneHydraBig),
 			expected: false,
 		},
@@ -223,6 +225,6 @@ func TestBLSValidatorVotingPower(t *testing.T) {
 	assert.Equal(
 		t,
 		*OneHydraBig,
-		NewBLSValidator(addr1, testBLSPubKey1, *OneHydraBig).VotingPower(),
+		NewBLSValidator(addr1, testBLSPubKey1, *OneHydraBig).VPower(),
 	)
 }

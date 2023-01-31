@@ -3,6 +3,7 @@ package validators
 import (
 	"encoding/json"
 	"fmt"
+	"math/big"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -98,17 +99,21 @@ func TestBLSValidatorsMarshalJSON(t *testing.T) {
 			`[
 				{
 					"Address": "%s",
-					"BLSPublicKey": "%s"
+					"BLSPublicKey": "%s",
+					"VotingPower": %s
 				},
 				{
 					"Address": "%s",
-					"BLSPublicKey": "%s"
+					"BLSPublicKey": "%s",
+					"VotingPower":%s
 				}
 			]`,
 			addr1,
 			testBLSPubKey1,
+			"1000000000000000000",
 			addr2,
 			testBLSPubKey2,
+			"1000000000000000000",
 		),
 		string(res),
 	)
@@ -121,17 +126,21 @@ func TestBLSValidatorsUnmarshalJSON(t *testing.T) {
 		`[
 			{
 				"Address": "%s",
-				"BLSPublicKey": "%s"
+				"BLSPublicKey": "%s",
+				"VotingPower": %s
 			},
 			{
 				"Address": "%s",
-				"BLSPublicKey": "%s"
+				"BLSPublicKey": "%s",
+				"VotingPower":%s
 			}
 		]`,
 		addr1,
 		testBLSPubKey1,
+		"1000000000000000000",
 		addr2,
 		testBLSPubKey2,
+		"1000000000000000000",
 	)
 
 	validators := NewBLSValidatorSet()
@@ -149,6 +158,7 @@ func TestBLSValidatorsUnmarshalJSON(t *testing.T) {
 				&BLSValidator{addr1, testBLSPubKey1, *OneHydraBig},
 				&BLSValidator{addr2, testBLSPubKey2, *OneHydraBig},
 			},
+			TotalVotingPower: *big.NewInt(0).Add(OneHydraBig, OneHydraBig),
 		},
 		validators,
 	)

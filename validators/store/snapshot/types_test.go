@@ -72,7 +72,8 @@ func createExampleBLSSnapshotJSON(
 				"Authorize": %t,
 				"Candidate": {
 					"Address": "%s",
-					"BLSPublicKey": "%s"
+					"BLSPublicKey": "%s",
+					"VotingPower":%s
 				},
 				"Validator": "%s"
 			}
@@ -80,7 +81,8 @@ func createExampleBLSSnapshotJSON(
 		"Set": [
 			{
 				"Address": "%s",
-				"BLSPublicKey": "%s"
+				"BLSPublicKey": "%s",
+				"VotingPower":%s
 			}
 		]
 	}`,
@@ -90,9 +92,11 @@ func createExampleBLSSnapshotJSON(
 		voteAuthorize,
 		voteCandidate.Address,
 		voteCandidate.BLSPublicKey,
+		&voteCandidate.VotingPower,
 		voteValidator,
 		setValidator.Address,
 		setValidator.BLSPublicKey,
+		&setValidator.VotingPower,
 	)
 }
 

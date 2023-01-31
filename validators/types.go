@@ -50,7 +50,7 @@ type Validator interface {
 	// Return the address of the validator
 	Addr() types.Address
 	// Return the voting power of the validator (staked balance)
-	VotingPower() big.Int
+	VPower() big.Int
 	// Return of copy of the validator
 	Copy() Validator
 	// Check the same validator or not
@@ -72,7 +72,7 @@ type Validators interface {
 	// Return the size of collection
 	Len() int
 	// Return the total voting power (staked balance) of collection
-	TotalVotingPower() big.Int
+	TotalVPower() big.Int
 	// Check equality of each element
 	Equal(Validators) bool
 	// Return of the whole collection

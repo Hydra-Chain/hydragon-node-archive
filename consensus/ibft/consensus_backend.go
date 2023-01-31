@@ -3,7 +3,6 @@ package ibft
 import (
 	"context"
 	"fmt"
-	"math"
 	"time"
 
 	"github.com/0xPolygon/go-ibft/messages"
@@ -138,22 +137,23 @@ func (i *backendIBFT) MaximumFaultyNodes() uint64 {
 	return uint64(CalcMaxFaultyNodes(i.currentValidators))
 }
 
+// TODO: Fix it before commit
 func (i *backendIBFT) Quorum(blockNumber uint64) uint64 {
-	validators, err := i.forkManager.GetValidators(blockNumber)
-	if err != nil {
-		i.logger.Error(
-			"failed to get validators when calculation quorum",
-			"height", blockNumber,
-			"err", err,
-		)
+	// validators, err := i.forkManager.GetValidators(blockNumber)
+	// if err != nil {
+	// 	i.logger.Error(
+	// 		"failed to get validators when calculation quorum",
+	// 		"height", blockNumber,
+	// 		"err", err,
+	// 	)
 
-		// return Math.MaxInt32 to prevent overflow when casting to int in go-ibft package
-		return math.MaxInt32
-	}
+	// 	// return Math.MaxInt32 to prevent overflow when casting to int in go-ibft package
+	// 	return math.MaxInt32
+	// }
 
-	quorumFn := i.quorumSize(blockNumber)
+	// quorumFn := i.quorumSize(blockNumber)
 
-	return uint64(quorumFn(validators))
+	return uint64(0)
 }
 
 // buildBlock builds the block, based on the passed in snapshot and parent header

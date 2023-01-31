@@ -3,6 +3,7 @@ package signer
 import (
 	"crypto/ecdsa"
 	"fmt"
+	"math/big"
 
 	"github.com/0xPolygon/polygon-edge/crypto"
 	"github.com/0xPolygon/polygon-edge/secrets"
@@ -116,14 +117,15 @@ func (s *ECDSAKeyManager) VerifyCommittedSeals(
 	rawCommittedSeal Seals,
 	digest []byte,
 	vals validators.Validators,
-) (int, error) {
+) (big.Int, error) {
+	zero := *big.NewInt(0)
 	committedSeal, ok := rawCommittedSeal.(*SerializedSeal)
 	if !ok {
-		return 0, ErrInvalidCommittedSealType
+		return zero, ErrInvalidCommittedSealType
 	}
 
 	if vals.Type() != s.Type() {
-		return 0, ErrInvalidValidators
+		return zero, ErrInvalidValidators
 	}
 
 	return s.verifyCommittedSealsImpl(committedSeal, digest, vals)
@@ -141,10 +143,11 @@ func (s *ECDSAKeyManager) verifyCommittedSealsImpl(
 	committedSeal *SerializedSeal,
 	msg []byte,
 	validators validators.Validators,
-) (int, error) {
+) (big.Int, error) {
+	zero := *big.NewInt(0)
 	numSeals := committedSeal.Num()
 	if numSeals == 0 {
-		return 0, ErrEmptyCommittedSeals
+		return zero, ErrEmptyCommittedSeals
 	}
 
 	visited := make(map[types.Address]bool)
@@ -152,21 +155,21 @@ func (s *ECDSAKeyManager) verifyCommittedSealsImpl(
 	for _, seal := range *committedSeal {
 		addr, err := s.Ecrecover(seal, msg)
 		if err != nil {
-			return 0, err
+			return zero, err
 		}
 
 		if visited[addr] {
-			return 0, ErrRepeatedCommittedSeal
+			return zero, ErrRepeatedCommittedSeal
 		}
 
 		if !validators.Includes(addr) {
-			return 0, ErrNonValidatorCommittedSeal
+			return zero, ErrNonValidatorCommittedSeal
 		}
 
 		visited[addr] = true
 	}
 
-	return numSeals, nil
+	return *big.NewInt(int64(numSeals)), nil
 }
 
 type SerializedSeal [][]byte

@@ -272,7 +272,7 @@ func createAggregatedBLSPubKeys(
 		pubkeys = append(pubkeys, pubKey)
 
 		// Return voting Power sum of all sealed validators instead of count of the validators
-		valVotingPower := validator.VotingPower()
+		valVotingPower := validator.VPower()
 		votingPower = votingPower.Add(votingPower, &valVotingPower)
 	}
 

@@ -1,6 +1,7 @@
 package validators
 
 import (
+	"math/big"
 	"testing"
 
 	"github.com/0xPolygon/polygon-edge/types"
@@ -600,6 +601,10 @@ func TestSetMarshalAndUnmarshal(t *testing.T) {
 			validator2 := &Set{
 				ValidatorType: test.validators.Type(),
 				Validators:    []Validator{},
+			}
+
+			if test.validators.Type() == BLSValidatorType {
+				validator2.TotalVotingPower = *big.NewInt(0).Add(OneHydraBig, OneHydraBig)
 			}
 
 			assert.NoError(

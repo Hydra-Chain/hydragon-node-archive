@@ -16,7 +16,7 @@ var (
 type Set struct {
 	ValidatorType    ValidatorType
 	Validators       []Validator
-	totalVotingPower big.Int
+	TotalVotingPower big.Int
 }
 
 // Type returns the type of validator
@@ -60,8 +60,9 @@ func (s *Set) Copy() Validators {
 	}
 
 	return &Set{
-		ValidatorType: s.ValidatorType,
-		Validators:    cloneValidators,
+		ValidatorType:    s.ValidatorType,
+		Validators:       cloneValidators,
+		TotalVotingPower: s.TotalVotingPower,
 	}
 }
 
@@ -99,7 +100,7 @@ func (s *Set) Add(val Validator) error {
 
 	s.Validators = append(s.Validators, val)
 
-	s.increaseVotingPower(val.VotingPower())
+	s.increaseVotingPower(val.VPower())
 
 	return nil
 }
@@ -118,7 +119,7 @@ func (s *Set) Del(val Validator) error {
 
 	s.Validators = append(s.Validators[:index], s.Validators[index+1:]...)
 
-	if err := s.decreaseVotingPower(val.VotingPower()); err != nil {
+	if err := s.decreaseVotingPower(val.VPower()); err != nil {
 		return err
 	}
 
@@ -196,6 +197,7 @@ func (s *Set) UnmarshalJSON(data []byte) error {
 	}
 
 	validators := make([]Validator, len(rawValidators))
+	votingPower := big.NewInt(0)
 
 	for idx := range validators {
 		if validators[idx], err = NewValidatorFromType(s.ValidatorType); err != nil {
@@ -205,45 +207,49 @@ func (s *Set) UnmarshalJSON(data []byte) error {
 		if err := json.Unmarshal(rawValidators[idx], validators[idx]); err != nil {
 			return err
 		}
+
+		validatorVPower := validators[idx].VPower()
+		votingPower.Add(votingPower, &validatorVPower)
 	}
 
 	s.Validators = validators
+	s.TotalVotingPower = *votingPower
 
 	return nil
 }
 
 // TotalVotingPower returns the sum of the voting powers of all validators.
 // It recomputes the total voting power if required.
-func (s *Set) TotalVotingPower() big.Int {
-	if s.totalVotingPower.Cmp(big.NewInt(0)) == 0 {
+func (s *Set) TotalVPower() big.Int {
+	if s.TotalVotingPower.Cmp(big.NewInt(0)) == 0 {
 		s.updateTotalVotingPower()
 	}
 
-	return s.totalVotingPower
+	return s.TotalVotingPower
 }
 
 // Forces recalculation of the set's total voting power.
 func (s *Set) updateTotalVotingPower() {
 	sum := big.NewInt(0)
 	for _, val := range s.Validators {
-		valVotingPower := val.VotingPower()
+		valVotingPower := val.VPower()
 		sum = sum.Add(sum, &valVotingPower)
 	}
 
-	s.totalVotingPower = *sum
+	s.TotalVotingPower = *sum
 }
 
 func (s *Set) increaseVotingPower(amount big.Int) {
-	s.totalVotingPower = *s.totalVotingPower.Add(&s.totalVotingPower, &amount)
+	s.TotalVotingPower = *s.TotalVotingPower.Add(&s.TotalVotingPower, &amount)
 }
 
 func (s *Set) decreaseVotingPower(amount big.Int) error {
-	newVotingPower := *s.totalVotingPower.Sub(&s.totalVotingPower, &amount)
+	newVotingPower := *s.TotalVotingPower.Sub(&s.TotalVotingPower, &amount)
 	if newVotingPower.Cmp(big.NewInt(0)) == -1 {
 		return ErrInvalidTVotingPower
 	}
 
-	s.totalVotingPower = newVotingPower
+	s.TotalVotingPower = newVotingPower
 
 	return nil
 }

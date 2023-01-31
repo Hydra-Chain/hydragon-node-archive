@@ -30,9 +30,10 @@ func createTestBLSValidatorString(
 	blsPubKey []byte,
 ) string {
 	return fmt.Sprintf(
-		"%s:%s",
+		"%s:%s:%s",
 		addr.String(),
 		"0x"+hex.EncodeToString(blsPubKey),
+		"1000000000000000000",
 	)
 }
 
@@ -290,13 +291,13 @@ func TestParseBLSValidator(t *testing.T) {
 		},
 		{
 			name:              "should return error for incorrect Address format",
-			validatorStr:      fmt.Sprintf("%s:%s", "aaaaa", testBLSPubKey1.String()),
+			validatorStr:      fmt.Sprintf("%s:%s:%s", "aaaaa", testBLSPubKey1.String(), "100000000000000"),
 			expectedValidator: nil,
 			expectedErr:       errors.New("failed to parse address:"),
 		},
 		{
 			name:              "should return for incorrect BLS Public Key format",
-			validatorStr:      fmt.Sprintf("%s:%s", addr1.String(), "bbbbb"),
+			validatorStr:      fmt.Sprintf("%s:%s:%s", addr1.String(), "bbbbb", "100000000000000"),
 			expectedValidator: nil,
 			expectedErr:       errors.New("failed to parse BLS Public Key:"),
 		},
