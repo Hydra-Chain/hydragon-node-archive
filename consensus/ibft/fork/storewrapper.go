@@ -1,6 +1,7 @@
 package fork
 
 import (
+	"errors"
 	"path/filepath"
 
 	"github.com/0xPolygon/polygon-edge/consensus/ibft/signer"
@@ -9,6 +10,10 @@ import (
 	"github.com/0xPolygon/polygon-edge/validators/store/contract"
 	"github.com/0xPolygon/polygon-edge/validators/store/snapshot"
 	"github.com/hashicorp/go-hclog"
+)
+
+var (
+	ErrSnapshotNotSupported = errors.New("Snapshot VotingPowers store is not supported (H_MODIFY)")
 )
 
 // SnapshotValidatorStoreWrapper is a wrapper of store.SnapshotValidatorStore
@@ -87,6 +92,13 @@ func NewSnapshotValidatorStoreWrapper(
 	}, nil
 }
 
+// GetVPowers gets and returns validators' voting powers at the given height
+func (w *SnapshotValidatorStoreWrapper) GetVPowers(
+	height, epochSize, forkFrom uint64,
+) (validators.VotingPowers, error) {
+	return nil, ErrSnapshotNotSupported
+}
+
 // ContractValidatorStoreWrapper is a wrapper of *contract.ContractValidatorStore
 // in order to add Close and GetValidators
 type ContractValidatorStoreWrapper struct {
@@ -132,7 +144,7 @@ func (w *ContractValidatorStoreWrapper) GetValidators(
 		return nil, err
 	}
 
-	return w.GetValidatorsByHeight(
+	validators, _, err := w.GetValidatorsByHeight(
 		signer.Type(),
 		calculateContractStoreFetchingHeight(
 			height,
@@ -140,6 +152,8 @@ func (w *ContractValidatorStoreWrapper) GetValidators(
 			forkFrom,
 		),
 	)
+
+	return validators, err
 }
 
 // calculateContractStoreFetchingHeight calculates the block height at which ContractStore fetches validators
@@ -165,4 +179,25 @@ func calculateContractStoreFetchingHeight(height, epochSize, forkFrom uint64) ui
 	}
 
 	return forkFrom
+}
+
+// GetVPowers gets and returns validators' voting powers at the given height
+func (w *ContractValidatorStoreWrapper) GetVPowers(
+	height, epochSize, forkFrom uint64,
+) (validators.VotingPowers, error) {
+	signer, err := w.getSigner(height)
+	if err != nil {
+		return nil, err
+	}
+
+	_, vpowers, err := w.GetValidatorsByHeight(
+		signer.Type(),
+		calculateContractStoreFetchingHeight(
+			height,
+			epochSize,
+			forkFrom,
+		),
+	)
+
+	return vpowers, err
 }

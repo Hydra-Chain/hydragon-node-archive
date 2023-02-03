@@ -2,6 +2,7 @@ package signer
 
 import (
 	"errors"
+	"math/big"
 
 	"github.com/0xPolygon/polygon-edge/crypto"
 	"github.com/0xPolygon/polygon-edge/types"
@@ -22,6 +23,10 @@ var (
 	ErrInvalidValidator           = errors.New("invalid validator type")
 	ErrInvalidSignature           = errors.New("invalid signature")
 )
+
+type VPowerGetter interface {
+	GetVotingPower(types.Address) (big.Int, error)
+}
 
 // Signer is responsible for signing for blocks and messages in IBFT
 type Signer interface {
@@ -51,7 +56,8 @@ type Signer interface {
 		hash types.Hash,
 		committedSeals Seals,
 		validators validators.Validators,
-		quorumSize int,
+		quorumSize big.Int,
+		vpower VPowerGetter,
 	) error
 
 	// ParentCommittedSeals
@@ -59,7 +65,7 @@ type Signer interface {
 		parentHash types.Hash,
 		header *types.Header,
 		parentValidators validators.Validators,
-		quorum int,
+		quorum big.Int,
 		mustExist bool,
 	) error
 
@@ -232,22 +238,24 @@ func (s *SignerImpl) VerifyCommittedSeals(
 	hash types.Hash,
 	committedSeals Seals,
 	validators validators.Validators,
-	quorumSize int,
+	quorumSize big.Int,
+	vpowerGetter VPowerGetter,
 ) error {
 	rawMsg := crypto.Keccak256(
 		wrapCommitHash(hash.Bytes()),
 	)
 
-	numSeals, err := s.keyManager.VerifyCommittedSeals(
+	vpower, err := s.keyManager.VerifyCommittedSeals(
 		committedSeals,
 		rawMsg,
 		validators,
+		vpowerGetter,
 	)
 	if err != nil {
 		return err
 	}
 
-	if numSeals < quorumSize {
+	if vpower.Cmp(&quorumSize) == -1 {
 		return ErrNotEnoughCommittedSeals
 	}
 
@@ -259,8 +267,9 @@ func (s *SignerImpl) VerifyParentCommittedSeals(
 	parentHash types.Hash,
 	header *types.Header,
 	parentValidators validators.Validators,
-	quorum int,
+	quorum big.Int,
 	mustExist bool,
+	vpowerGetter VPowerGetter,
 ) error {
 	parentCommittedSeals, err := s.GetParentCommittedSeals(header)
 	if err != nil {
@@ -282,16 +291,17 @@ func (s *SignerImpl) VerifyParentCommittedSeals(
 		wrapCommitHash(parentHash[:]),
 	)
 
-	numSeals, err := s.keyManager.VerifyCommittedSeals(
+	vpower, err := s.keyManager.VerifyCommittedSeals(
 		parentCommittedSeals,
 		rawMsg,
 		parentValidators,
+		vpowerGetter,
 	)
 	if err != nil {
 		return err
 	}
 
-	if numSeals < quorum {
+	if vpower.Cmp(&quorum) == -1 {
 		return ErrNotEnoughCommittedSeals
 	}
 

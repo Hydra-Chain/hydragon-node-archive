@@ -57,7 +57,7 @@ func (r *PoAHookRegister) RegisterHooks(hooks *hook.Hooks, height uint64) {
 	}
 }
 
-// PoAHookRegisterer that registers hooks for PoS mode
+// PoSHookRegisterer that registers hooks for PoS mode
 type PoSHookRegister struct {
 	posForks            IBFTForks
 	epochSize           uint64

@@ -59,6 +59,7 @@ type forkManagerInterface interface {
 	GetSigner(uint64) (signer.Signer, error)
 	GetValidatorStore(uint64) (fork.ValidatorStore, error)
 	GetValidators(uint64) (validators.Validators, error)
+	GetVPowers(uint64) (validators.VotingPowers, error)
 	GetHooks(uint64) fork.HooksInterface
 }
 
@@ -81,7 +82,7 @@ type backendIBFT struct {
 	// Dynamic References
 	forkManager       forkManagerInterface  // Manager to hold IBFT Forks
 	currentSigner     signer.Signer         // Signer at current sequence
-	currentValidators validators.Validators // signer at current sequence
+	currentValidators validators.Validators // Validators at current sequence
 	currentHooks      fork.HooksInterface   // Hooks at current sequence
 
 	// Configurations
@@ -408,7 +409,7 @@ func (i *backendIBFT) VerifyHeader(header *types.Header) error {
 		)
 	}
 
-	headerSigner, validators, hooks, err := getModulesFromForkManager(
+	headerSigner, validators, hooks, vpowers, err := getModulesFromForkManager(
 		i.forkManager,
 		header.Number,
 	)
@@ -448,7 +449,8 @@ func (i *backendIBFT) VerifyHeader(header *types.Header) error {
 		hashForCommittedSeal,
 		extra.CommittedSeals,
 		validators,
-		i.quorumSize(header.Number)(validators),
+		i.quorumSize(header.Number)(validators, vpowers),
+		vpowers,
 	); err != nil {
 		return err
 	}
@@ -553,7 +555,7 @@ func (i *backendIBFT) SetHeaderHash() {
 func (i *backendIBFT) updateCurrentModules(height uint64) error {
 	lastSigner := i.currentSigner
 
-	signer, validators, hooks, err := getModulesFromForkManager(i.forkManager, height)
+	signer, validators, hooks, _, err := getModulesFromForkManager(i.forkManager, height)
 	if err != nil {
 		return err
 	}
@@ -584,7 +586,7 @@ func (i *backendIBFT) verifyParentCommittedSeals(
 		return nil
 	}
 
-	parentSigner, parentValidators, _, err := getModulesFromForkManager(
+	parentSigner, parentValidators, _, parentVPowers, err := getModulesFromForkManager(
 		i.forkManager,
 		parent.Number,
 	)
@@ -617,7 +619,7 @@ func (i *backendIBFT) verifyParentCommittedSeals(
 		parentHash,
 		header,
 		parentValidators,
-		i.quorumSize(parent.Number)(parentValidators),
+		i.quorumSize(parent.Number)(parentValidators, parentVPowers),
 		shouldVerifyParentCommittedSeals,
 	)
 }
@@ -627,21 +629,28 @@ func getModulesFromForkManager(forkManager forkManagerInterface, height uint64) 
 	signer.Signer,
 	validators.Validators,
 	fork.HooksInterface,
+	validators.VotingPowers,
 	error,
 ) {
 	signer, err := forkManager.GetSigner(height)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
 	}
 
 	validators, err := forkManager.GetValidators(height)
 	if err != nil {
-		return nil, nil, nil, err
+		return nil, nil, nil, nil, err
+
 	}
 
 	hooks := forkManager.GetHooks(height)
 
-	return signer, validators, hooks, nil
+	vpowers, err := forkManager.GetVPowers(height)
+	if err != nil {
+		return nil, nil, nil, nil, err
+	}
+
+	return signer, validators, hooks, vpowers, nil
 }
 
 // verifyProposerSeal verifies ProposerSeal in IBFT Extra of header
@@ -665,7 +674,7 @@ func verifyProposerSeal(
 
 // ValidateExtraDataFormat Verifies that extra data can be unmarshaled
 func (i *backendIBFT) ValidateExtraDataFormat(header *types.Header) error {
-	blockSigner, _, _, err := getModulesFromForkManager(
+	blockSigner, _, _, _, err := getModulesFromForkManager(
 		i.forkManager,
 		header.Number,
 	)

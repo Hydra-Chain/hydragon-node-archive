@@ -531,7 +531,8 @@ func TestBLSKeyManagerVerifyCommittedSeals(t *testing.T) {
 		rawCommittedSeals Seals
 		hash              []byte
 		validators        validators.Validators
-		expectedRes       int
+		vPowerGetter      VPowerGetter
+		expectedRes       big.Int
 		expectedErr       error
 	}{
 		{
@@ -539,7 +540,8 @@ func TestBLSKeyManagerVerifyCommittedSeals(t *testing.T) {
 			rawCommittedSeals: &SerializedSeal{},
 			hash:              nil,
 			validators:        nil,
-			expectedRes:       0,
+			vPowerGetter:      nil,
+			expectedRes:       *big.NewInt(0),
 			expectedErr:       ErrInvalidCommittedSealType,
 		},
 		{
@@ -548,9 +550,10 @@ func TestBLSKeyManagerVerifyCommittedSeals(t *testing.T) {
 				Bitmap:    big.NewInt(0).SetBit(new(big.Int), 0, 1),
 				Signature: aggregatedBLSSigBytes,
 			},
-			validators:  validators.NewECDSAValidatorSet(),
-			expectedRes: 0,
-			expectedErr: ErrInvalidValidators,
+			validators:   validators.NewECDSAValidatorSet(),
+			vPowerGetter: nil,
+			expectedRes:  *big.NewInt(0),
+			expectedErr:  ErrInvalidValidators,
 		},
 		{
 			name: "should return size of AggregatedSeal if it's successful",
@@ -564,8 +567,9 @@ func TestBLSKeyManagerVerifyCommittedSeals(t *testing.T) {
 					blsKeyManager1,
 				),
 			),
-			expectedRes: 1,
-			expectedErr: nil,
+			vPowerGetter: {},
+			expectedRes:  1,
+			expectedErr:  nil,
 		},
 	}
 
@@ -579,6 +583,7 @@ func TestBLSKeyManagerVerifyCommittedSeals(t *testing.T) {
 				test.rawCommittedSeals,
 				msg,
 				test.validators,
+				test.vPowerGetter,
 			)
 
 			assert.Equal(t, test.expectedRes, res)

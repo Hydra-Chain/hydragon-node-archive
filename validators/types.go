@@ -2,7 +2,9 @@ package validators
 
 import (
 	"errors"
+	"math/big"
 
+	proto "github.com/0xPolygon/go-ibft/messages/proto"
 	"github.com/0xPolygon/polygon-edge/types"
 	"github.com/umbracle/fastrlp"
 )
@@ -13,6 +15,7 @@ var (
 	ErrMismatchValidatorsType = errors.New("mismatch between two validators")
 	ErrValidatorAlreadyExists = errors.New("validator already exists in validators")
 	ErrValidatorNotFound      = errors.New("validator not found in validators")
+	ErrVPowerNotFound         = errors.New("validator voting power not found in validators' voting powers")
 	ErrInvalidValidators      = errors.New("container is not ")
 )
 
@@ -88,4 +91,16 @@ type Validators interface {
 	MarshalRLPWith(*fastrlp.Arena) *fastrlp.Value
 	// Decode bytes in RLP encode and map to the elements
 	UnmarshalRLPFrom(*fastrlp.Parser, *fastrlp.Value) error
+}
+
+type VotingPower interface {
+	GetValue() big.Int
+	VallAddress() types.Address
+}
+
+type VotingPowers interface {
+	GetTVotingPower() big.Int
+	GetVotingPower(types.Address) (big.Int, error)
+	Add(VotingPower) error
+	CalcMessagesPower(messages []*proto.Message) (big.Int, error)
 }
