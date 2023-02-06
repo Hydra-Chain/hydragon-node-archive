@@ -621,6 +621,7 @@ func (i *backendIBFT) verifyParentCommittedSeals(
 		parentValidators,
 		i.quorumSize(parent.Number)(parentValidators, parentVPowers),
 		shouldVerifyParentCommittedSeals,
+		parentVPowers,
 	)
 }
 

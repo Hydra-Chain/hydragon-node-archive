@@ -41,12 +41,24 @@ var (
 		blsValidator2,
 	)
 
+	vPowers = newTestVPowersSetFromVals(ecdsaValidators)
+	// vPowers
+
 	testProposerSeal     = crypto.Keccak256([]byte{0x1})
 	testSerializedSeals1 = &SerializedSeal{[]byte{0x1}, []byte{0x2}}
 	testSerializedSeals2 = &SerializedSeal{[]byte{0x3}, []byte{0x4}}
 	testAggregatedSeals1 = newTestAggregatedSeals([]int{0, 1}, []byte{0x12})
 	testAggregatedSeals2 = newTestAggregatedSeals([]int{2, 3}, []byte{0x23})
 )
+
+func newTestVPowersSetFromVals(vals validators.Validators) validators.VotingPowers {
+	vPowers := validators.NewVotingPowers()
+	for i := 0; i < vals.Len(); i++ {
+		vPowers.Add(validators.NewVotingPower(vals.At(uint64(i)).Addr(), *big.NewInt(1), *big.NewInt(0), *big.NewInt(85)))
+	}
+
+	return vPowers
+}
 
 func newTestAggregatedSeals(bitFlags []int, signature []byte) *AggregatedSeal {
 	bitMap := new(big.Int)
@@ -876,8 +888,9 @@ func TestSignerVerifyCommittedSeals(t *testing.T) {
 		name                    string
 		header                  *types.Header
 		validators              validators.Validators
-		quorumSize              int
-		verifyCommittedSealsRes int
+		vPowers                 validators.VotingPowers
+		quorumSize              big.Int
+		verifyCommittedSealsRes *big.Int
 		verifyCommittedSealsErr error
 		expectedErr             error
 	}{
@@ -894,8 +907,9 @@ func TestSignerVerifyCommittedSeals(t *testing.T) {
 				),
 			},
 			validators:              ecdsaValidators,
-			quorumSize:              0,
-			verifyCommittedSealsRes: 0,
+			vPowers:                 vPowers,
+			quorumSize:              *big.NewInt(0),
+			verifyCommittedSealsRes: big.NewInt(0),
 			verifyCommittedSealsErr: errTest,
 			expectedErr:             errTest,
 		},
@@ -912,8 +926,8 @@ func TestSignerVerifyCommittedSeals(t *testing.T) {
 				),
 			},
 			validators:              ecdsaValidators,
-			quorumSize:              5,
-			verifyCommittedSealsRes: 3,
+			quorumSize:              *big.NewInt(5),
+			verifyCommittedSealsRes: big.NewInt(3),
 			verifyCommittedSealsErr: nil,
 			expectedErr:             ErrNotEnoughCommittedSeals,
 		},
@@ -930,8 +944,8 @@ func TestSignerVerifyCommittedSeals(t *testing.T) {
 				),
 			},
 			validators:              ecdsaValidators,
-			quorumSize:              5,
-			verifyCommittedSealsRes: 6,
+			quorumSize:              *big.NewInt(5),
+			verifyCommittedSealsRes: big.NewInt(6),
 			verifyCommittedSealsErr: nil,
 			expectedErr:             nil,
 		},
@@ -948,7 +962,7 @@ func TestSignerVerifyCommittedSeals(t *testing.T) {
 				NewEmptyCommittedSealsFunc: func() Seals {
 					return committedSeals
 				},
-				VerifyCommittedSealsFunc: func(s Seals, b []byte, v validators.Validators) (int, error) {
+				VerifyCommittedSealsFunc: func(s Seals, b []byte, v validators.Validators, vp VPowerGetter) (*big.Int, error) {
 					assert.Equal(t, testSerializedSeals1, s)
 					assert.Equal(t, ecdsaValidators, v)
 					assert.Equal(t, expectedSig, b)
@@ -973,6 +987,7 @@ func TestSignerVerifyCommittedSeals(t *testing.T) {
 					committedSeals,
 					test.validators,
 					test.quorumSize,
+					test.vPowers,
 				),
 			)
 		})
@@ -989,9 +1004,10 @@ func TestSignerVerifyParentCommittedSeals(t *testing.T) {
 		parentHeader            *types.Header
 		header                  *types.Header
 		parentValidators        validators.Validators
-		quorumSize              int
+		parentVPowers           validators.VotingPowers
+		quorumSize              big.Int
 		mustExist               bool
-		verifyCommittedSealsRes int
+		verifyCommittedSealsRes *big.Int
 		verifyCommittedSealsErr error
 		expectedErr             error
 	}{
@@ -1004,9 +1020,9 @@ func TestSignerVerifyParentCommittedSeals(t *testing.T) {
 				ExtraData: []byte{},
 			},
 			parentValidators:        ecdsaValidators,
-			quorumSize:              0,
+			quorumSize:              *big.NewInt(0),
 			mustExist:               true,
-			verifyCommittedSealsRes: 0,
+			verifyCommittedSealsRes: big.NewInt(0),
 			verifyCommittedSealsErr: nil,
 			expectedErr: fmt.Errorf(
 				"wrong extra size, expected greater than or equal to %d but actual %d",
@@ -1029,9 +1045,9 @@ func TestSignerVerifyParentCommittedSeals(t *testing.T) {
 				),
 			},
 			parentValidators:        ecdsaValidators,
-			quorumSize:              0,
+			quorumSize:              *big.NewInt(0),
 			mustExist:               true,
-			verifyCommittedSealsRes: 0,
+			verifyCommittedSealsRes: big.NewInt(0),
 			verifyCommittedSealsErr: nil,
 			expectedErr:             ErrEmptyParentCommittedSeals,
 		},
@@ -1050,9 +1066,9 @@ func TestSignerVerifyParentCommittedSeals(t *testing.T) {
 				),
 			},
 			parentValidators:        ecdsaValidators,
-			quorumSize:              0,
+			quorumSize:              *big.NewInt(0),
 			mustExist:               false,
-			verifyCommittedSealsRes: 0,
+			verifyCommittedSealsRes: big.NewInt(0),
 			verifyCommittedSealsErr: nil,
 			expectedErr:             nil,
 		},
@@ -1071,9 +1087,9 @@ func TestSignerVerifyParentCommittedSeals(t *testing.T) {
 				),
 			},
 			parentValidators:        ecdsaValidators,
-			quorumSize:              0,
+			quorumSize:              *big.NewInt(0),
 			mustExist:               false,
-			verifyCommittedSealsRes: 0,
+			verifyCommittedSealsRes: big.NewInt(0),
 			verifyCommittedSealsErr: errTest,
 			expectedErr:             errTest,
 		},
@@ -1092,9 +1108,9 @@ func TestSignerVerifyParentCommittedSeals(t *testing.T) {
 				),
 			},
 			parentValidators:        ecdsaValidators,
-			quorumSize:              5,
+			quorumSize:              *big.NewInt(5),
 			mustExist:               false,
-			verifyCommittedSealsRes: 2,
+			verifyCommittedSealsRes: big.NewInt(2),
 			verifyCommittedSealsErr: nil,
 			expectedErr:             ErrNotEnoughCommittedSeals,
 		},
@@ -1113,9 +1129,9 @@ func TestSignerVerifyParentCommittedSeals(t *testing.T) {
 				),
 			},
 			parentValidators:        ecdsaValidators,
-			quorumSize:              5,
+			quorumSize:              *big.NewInt(5),
 			mustExist:               false,
-			verifyCommittedSealsRes: 6,
+			verifyCommittedSealsRes: big.NewInt(6),
 			verifyCommittedSealsErr: nil,
 			expectedErr:             nil,
 		},
@@ -1140,7 +1156,7 @@ func TestSignerVerifyParentCommittedSeals(t *testing.T) {
 				NewEmptyCommittedSealsFunc: func() Seals {
 					return &SerializedSeal{}
 				},
-				VerifyCommittedSealsFunc: func(s Seals, b []byte, v validators.Validators) (int, error) {
+				VerifyCommittedSealsFunc: func(s Seals, b []byte, v validators.Validators, vp VPowerGetter) (*big.Int, error) {
 					assert.Equal(t, testSerializedSeals2, s)
 					assert.Equal(t, ecdsaValidators, v)
 					assert.Equal(t, expectedSig, b)
@@ -1158,6 +1174,7 @@ func TestSignerVerifyParentCommittedSeals(t *testing.T) {
 					test.parentValidators,
 					test.quorumSize,
 					test.mustExist,
+					test.parentVPowers,
 				),
 			)
 		})

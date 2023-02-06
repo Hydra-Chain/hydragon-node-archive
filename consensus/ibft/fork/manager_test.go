@@ -24,6 +24,7 @@ type mockValidatorStore struct {
 
 	CloseFunc         func() error
 	GetValidatorsFunc func(uint64, uint64, uint64) (validators.Validators, error)
+	GetVPowersFunc    func(uint64, uint64, uint64) (validators.VotingPowers, error)
 }
 
 func (m *mockValidatorStore) Close() error {
@@ -32,6 +33,10 @@ func (m *mockValidatorStore) Close() error {
 
 func (m *mockValidatorStore) GetValidators(height, epoch, from uint64) (validators.Validators, error) {
 	return m.GetValidatorsFunc(height, epoch, from)
+}
+
+func (m *mockValidatorStore) GetVPowers(height, epochSize, forkFrom uint64) (validators.VotingPowers, error) {
+	return m.GetVPowersFunc(height, epochSize, forkFrom)
 }
 
 type mockHooksRegister struct {

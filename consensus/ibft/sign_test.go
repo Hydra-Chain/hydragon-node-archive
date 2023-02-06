@@ -59,6 +59,7 @@ func TestSign_CommittedSeals(t *testing.T) {
 	)
 
 	correctValSet := pool.ValidatorSet()
+	correctVPowers := pool.VPowers()
 
 	signerA := signer.NewSigner(
 		signer.NewECDSAKeyManagerFromKey(pool.get("A").priv),
@@ -107,7 +108,8 @@ func TestSign_CommittedSeals(t *testing.T) {
 			sealed.Hash,
 			committedSeal.CommittedSeals,
 			correctValSet,
-			OptimalQuorumSize(correctValSet),
+			OptimalQuorumSize(correctValSet, correctVPowers),
+			correctVPowers,
 		)
 	}
 

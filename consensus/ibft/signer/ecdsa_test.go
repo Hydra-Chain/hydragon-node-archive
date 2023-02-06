@@ -371,6 +371,7 @@ func TestECDSAKeyManagerVerifyCommittedSeals(t *testing.T) {
 		committedSeals Seals
 		digest         []byte
 		rawSet         validators.Validators
+		vPowers        validators.VotingPowers
 		expectedRes    int
 		expectedErr    error
 	}{
@@ -416,6 +417,7 @@ func TestECDSAKeyManagerVerifyCommittedSeals(t *testing.T) {
 				test.committedSeals,
 				test.digest,
 				test.rawSet,
+				test.vPowers,
 			)
 
 			assert.Equal(t, test.expectedRes, res)
@@ -468,6 +470,7 @@ func TestECDSAKeyManager_verifyCommittedSealsImpl(t *testing.T) {
 		committedSeals *SerializedSeal
 		msg            []byte
 		validators     validators.Validators
+		vpowers        validators.VotingPowers
 		expectedRes    int
 		expectedErr    error
 	}{
@@ -545,6 +548,7 @@ func TestECDSAKeyManager_verifyCommittedSealsImpl(t *testing.T) {
 				test.committedSeals,
 				test.msg,
 				test.validators,
+				test.vpowers,
 			)
 
 			assert.Equal(t, test.expectedRes, res)

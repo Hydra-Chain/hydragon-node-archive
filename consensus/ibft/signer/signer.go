@@ -67,6 +67,7 @@ type Signer interface {
 		parentValidators validators.Validators,
 		quorum big.Int,
 		mustExist bool,
+		vpower VPowerGetter,
 	) error
 
 	// IBFTMessage

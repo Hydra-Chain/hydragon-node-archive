@@ -206,9 +206,9 @@ func (m *ForkManager) getValidatorStoreByIBFTFork(fork *IBFTFork) ValidatorStore
 	}
 
 	// H_MODIFY: Snapshot store is not supported, because votingpowers is only kept in contract
-	if set.SourceType() == store.Snapshot {
-		return nil
-	}
+	// if set.SourceType() == store.Snapshot {
+	// 	return nil
+	// }
 
 	return set
 }

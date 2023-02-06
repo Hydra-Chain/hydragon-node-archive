@@ -1,6 +1,7 @@
 package validators
 
 import (
+	"errors"
 	"math/big"
 
 	"github.com/0xPolygon/polygon-edge/types"
@@ -14,8 +15,13 @@ type votingPower struct {
 	valAddress *types.Address
 }
 
-func NewVotingPower(valAddress types.Address, stakedBalance big.Int, delegatedBalance big.Int) VotingPower {
-	return &votingPower{value: big.NewInt(1), valAddress: &valAddress}
+func NewVotingPower(valAddress types.Address, stakedBalance big.Int, delegatedBalance big.Int, delegationWeightBps big.Int) VotingPower {
+	v, err := calculateVotingPower(&stakedBalance, &delegatedBalance, &delegationWeightBps)
+	if err != nil {
+		return nil
+	}
+
+	return &votingPower{value: v, valAddress: &valAddress}
 }
 
 func (v *votingPower) GetValue() big.Int {
@@ -26,6 +32,26 @@ func (v *votingPower) VallAddress() types.Address {
 	return *v.valAddress
 }
 
+// calculateVotingPower calculates the voting power of validator based on both staked and delegated amount
+func calculateVotingPower(
+	stakedAmount *big.Int,
+	delegatedAmount *big.Int,
+	delegationWeightBps *big.Int, // delegationWeightBps / 1000 = delegation weight exponent
+) (*big.Int, error) {
+	if delegationWeightBps.Cmp(big.NewInt(0)) == -1 || delegationWeightBps.Cmp(big.NewInt(1000)) == 1 {
+		return nil, errors.New("invalid delegation weight bps")
+	}
+
+	denominator := big.NewInt(1000)
+	numerator := delegatedAmount.Mul(delegatedAmount, delegationWeightBps)
+
+	if (numerator.Cmp(denominator)) == -1 {
+		return stakedAmount, nil
+	}
+
+	return stakedAmount.Add(stakedAmount, numerator.Div(numerator, denominator)), nil
+}
+
 // Represents set with Voting Power of Validators set
 type votingPowers struct {
 	totalVPower *big.Int
@@ -34,7 +60,7 @@ type votingPowers struct {
 
 // NewVotingPowers creates an empty VotingPowers struct
 func NewVotingPowers() VotingPowers {
-	return &votingPowers{}
+	return &votingPowers{totalVPower: big.NewInt(0)}
 }
 
 // Add adds a voting power into the collection
@@ -45,6 +71,7 @@ func (vv *votingPowers) Add(v VotingPower) error {
 	}
 
 	vv.values = append(vv.values, v)
+	vv.increaseVotingPower(v.GetValue())
 
 	return nil
 }

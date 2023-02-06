@@ -61,6 +61,25 @@ func testBLSKeyManagerToBLSValidator(t *testing.T, keyManager KeyManager) *valid
 	)
 }
 
+func testBLSKeyManagerToVPower(t *testing.T, keyManager KeyManager) validators.VotingPower {
+	t.Helper()
+
+	return validators.NewVotingPower(keyManager.Address(), *big.NewInt(0), *big.NewInt(0), *big.NewInt(85))
+}
+
+func testBLSKeyManagerToVPowers(t *testing.T, keyManager KeyManager) validators.VotingPowers {
+	t.Helper()
+
+	set := validators.NewVotingPowers()
+
+	err := set.Add(testBLSKeyManagerToVPower(t, keyManager))
+	if err != nil {
+		panic(err)
+	}
+
+	return set
+}
+
 func testCreateAggregatedSignature(t *testing.T, msg []byte, keyManagers ...KeyManager) []byte {
 	t.Helper()
 
@@ -567,8 +586,8 @@ func TestBLSKeyManagerVerifyCommittedSeals(t *testing.T) {
 					blsKeyManager1,
 				),
 			),
-			vPowerGetter: {},
-			expectedRes:  1,
+			vPowerGetter: testBLSKeyManagerToVPowers(t, blsKeyManager1),
+			expectedRes:  *big.NewInt(1),
 			expectedErr:  nil,
 		},
 	}
@@ -801,7 +820,8 @@ func Test_createAggregatedBLSPubKeys(t *testing.T) {
 			true,
 		}
 
-		validators := validators.NewBLSValidatorSet()
+		vals := validators.NewBLSValidatorSet()
+		vPowers := validators.NewVotingPowers()
 		bitMap := new(big.Int)
 
 		expectedBLSPublicKeys := []*bls_sig.PublicKey{}
@@ -813,8 +833,19 @@ func Test_createAggregatedBLSPubKeys(t *testing.T) {
 			// add to validators
 			assert.NoError(
 				t,
-				validators.Add(
+				vals.Add(
 					testBLSKeyManagerToBLSValidator(
+						t,
+						blsKeyManager,
+					),
+				),
+			)
+
+			// add to vpowers
+			assert.NoError(
+				t,
+				vPowers.Add(
+					testBLSKeyManagerToVPower(
 						t,
 						blsKeyManager,
 					),
@@ -841,8 +872,9 @@ func Test_createAggregatedBLSPubKeys(t *testing.T) {
 		assert.NoError(t, err)
 
 		aggregatedPubKey, num, err := createAggregatedBLSPubKeys(
-			validators,
+			vals,
 			bitMap,
+			vPowers,
 		)
 
 		assert.NoError(t, err)
@@ -857,6 +889,7 @@ func Test_createAggregatedBLSPubKeys(t *testing.T) {
 		aggrecatedPubKeys, num, err := createAggregatedBLSPubKeys(
 			validators.NewBLSValidatorSet(),
 			new(big.Int),
+			validators.NewVotingPowers(),
 		)
 
 		assert.Nil(t, aggrecatedPubKeys)
@@ -875,6 +908,7 @@ func Test_createAggregatedBLSPubKeys(t *testing.T) {
 				),
 			),
 			new(big.Int).SetBit(new(big.Int), 0, 1),
+			validators.NewVotingPowers(),
 		)
 
 		assert.Nil(t, aggrecatedPubKeys)
@@ -916,6 +950,7 @@ func Test_verifyBLSCommittedSealsImpl(t *testing.T) {
 		committedSeal *AggregatedSeal
 		msg           []byte
 		validators    validators.Validators
+		vPowers       validators.VotingPowers
 		expectedRes   int
 		expectedErr   error
 	}{
@@ -1069,6 +1104,7 @@ func Test_verifyBLSCommittedSealsImpl(t *testing.T) {
 				test.committedSeal,
 				test.msg,
 				test.validators,
+				test.vPowers,
 			)
 
 			assert.Equal(t, test.expectedRes, res)
