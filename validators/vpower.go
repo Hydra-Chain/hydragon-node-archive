@@ -15,6 +15,7 @@ type votingPower struct {
 	valAddress *types.Address
 }
 
+// NewVotingPower Creates a new VotingPower and return its reference
 func NewVotingPower(valAddress types.Address, stakedBalance big.Int, delegatedBalance big.Int, delegationWeightBps big.Int) VotingPower {
 	v, err := calculateVotingPower(&stakedBalance, &delegatedBalance, &delegationWeightBps)
 	if err != nil {
@@ -59,8 +60,21 @@ type votingPowers struct {
 }
 
 // NewVotingPowers creates an empty VotingPowers struct
-func NewVotingPowers() VotingPowers {
-	return &votingPowers{totalVPower: big.NewInt(0)}
+func NewVotingPowers(vpowers ...VotingPower) VotingPowers {
+	values := make([]VotingPower, len(vpowers))
+	totalVPower := big.NewInt(0)
+
+	for idx, val := range vpowers {
+		values[idx] = val
+
+		valPower := val.GetValue()
+		totalVPower.Add(totalVPower, &valPower)
+	}
+
+	return &votingPowers{
+		values:      values,
+		totalVPower: totalVPower,
+	}
 }
 
 // Add adds a voting power into the collection

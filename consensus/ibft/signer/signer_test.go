@@ -54,7 +54,7 @@ var (
 func newTestVPowersSetFromVals(vals validators.Validators) validators.VotingPowers {
 	vPowers := validators.NewVotingPowers()
 	for i := 0; i < vals.Len(); i++ {
-		vPowers.Add(validators.NewVotingPower(vals.At(uint64(i)).Addr(), *big.NewInt(1), *big.NewInt(0), *big.NewInt(85)))
+		vPowers.Add(validators.NewVotingPower(vals.At(uint64(i)).Addr(), *big.NewInt(15000), *big.NewInt(0), *big.NewInt(85)))
 	}
 
 	return vPowers

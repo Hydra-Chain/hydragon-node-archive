@@ -2,6 +2,7 @@ package contract
 
 import (
 	"errors"
+	"math/big"
 	"testing"
 
 	"github.com/0xPolygon/polygon-edge/chain"
@@ -137,8 +138,10 @@ func newTestContractValidatorStore(
 	t.Helper()
 
 	var cache *lru.Cache
+	var cacheVPower *lru.Cache
 	if cacheSize > 0 {
 		cache = newTestCache(t, cacheSize)
+		cacheVPower = newTestCache(t, cacheSize)
 	}
 
 	return &ContractValidatorStore{
@@ -146,6 +149,7 @@ func newTestContractValidatorStore(
 		blockchain:        blockchain,
 		executor:          executor,
 		validatorSetCache: cache,
+		vpowerSetCache:    cacheVPower,
 	}
 }
 
@@ -176,6 +180,7 @@ func TestNewContractValidatorStore(t *testing.T) {
 				blockchain:        blockchain,
 				executor:          executor,
 				validatorSetCache: newTestCache(t, 1),
+				vpowerSetCache:    newTestCache(t, 1),
 			},
 			expectedErr: nil,
 		},
@@ -242,6 +247,11 @@ func TestContractValidatorStoreGetValidators(t *testing.T) {
 			validators.NewECDSAValidator(addr2),
 		)
 
+		vPowers = validators.NewVotingPowers(
+			validators.NewVotingPower(addr1, *big.NewInt(15000), *big.NewInt(0), *big.NewInt(85)),
+			validators.NewVotingPower(addr2, *big.NewInt(15000), *big.NewInt(0), *big.NewInt(85)),
+		)
+
 		blsValidators = validators.NewBLSValidatorSet(
 			validators.NewBLSValidator(addr1, testBLSPubKey1),
 			validators.NewBLSValidator(addr2, testBLSPubKey2),
@@ -259,21 +269,24 @@ func TestContractValidatorStoreGetValidators(t *testing.T) {
 	)
 
 	tests := []struct {
-		name          string
-		blockchain    store.HeaderGetter
-		executor      Executor
-		cacheSize     int
-		initialCaches map[uint64]interface{}
+		name                string
+		blockchain          store.HeaderGetter
+		executor            Executor
+		cacheSize           int
+		initialCaches       map[uint64]interface{}
+		initialCachesVPower map[uint64]interface{}
 
 		// input
 		validatorType validators.ValidatorType
 		height        uint64
 
 		// output
-		expectedRes validators.Validators
-		expectedErr error
+		expectedRes       validators.Validators
+		expectedResVPower validators.VotingPowers
+		expectedErr       error
 		// caches after calling GetValidators
-		finalCaches map[uint64]interface{}
+		finalCaches       map[uint64]interface{}
+		finalCachesVPower map[uint64]interface{}
 	}{
 		{
 			name:       "should return error when loadCachedValidatorSet failed",
@@ -283,15 +296,22 @@ func TestContractValidatorStoreGetValidators(t *testing.T) {
 			initialCaches: map[uint64]interface{}{
 				0: string("fake"),
 			},
-			height:      0,
-			expectedRes: nil,
-			expectedErr: ErrInvalidValidatorsTypeAssertion,
+			initialCachesVPower: map[uint64]interface{}{
+				0: string("fake"),
+			},
+			height:            0,
+			expectedRes:       nil,
+			expectedResVPower: nil,
+			expectedErr:       ErrInvalidValidatorsTypeAssertion,
 			finalCaches: map[uint64]interface{}{
+				0: string("fake"),
+			},
+			finalCachesVPower: map[uint64]interface{}{
 				0: string("fake"),
 			},
 		},
 		{
-			name:       "should return validators if cache exists",
+			name:       "should return validators and their voting powers if cache exists",
 			blockchain: nil,
 			executor:   nil,
 			cacheSize:  1,
@@ -300,14 +320,27 @@ func TestContractValidatorStoreGetValidators(t *testing.T) {
 					validators.NewECDSAValidator(addr1),
 				),
 			},
+			initialCachesVPower: map[uint64]interface{}{
+				0: validators.NewVotingPowers(
+					validators.NewVotingPower(addr1, *big.NewInt(15000), *big.NewInt(0), *big.NewInt(85)),
+				),
+			},
 			height: 0,
 			expectedRes: validators.NewECDSAValidatorSet(
 				validators.NewECDSAValidator(addr1),
+			),
+			expectedResVPower: validators.NewVotingPowers(
+				validators.NewVotingPower(addr1, *big.NewInt(15000), *big.NewInt(0), *big.NewInt(0)),
 			),
 			expectedErr: nil,
 			finalCaches: map[uint64]interface{}{
 				0: validators.NewECDSAValidatorSet(
 					validators.NewECDSAValidator(addr1),
+				),
+			},
+			finalCachesVPower: map[uint64]interface{}{
+				0: validators.NewVotingPowers(
+					validators.NewVotingPower(addr1, *big.NewInt(15000), *big.NewInt(0), *big.NewInt(0)),
 				),
 			},
 		},
@@ -320,13 +353,16 @@ func TestContractValidatorStoreGetValidators(t *testing.T) {
 					return nil, false
 				},
 			},
-			executor:      nil,
-			cacheSize:     1,
-			initialCaches: map[uint64]interface{}{},
-			height:        1,
-			expectedRes:   nil,
-			expectedErr:   errors.New("header not found at 1"),
-			finalCaches:   map[uint64]interface{}{},
+			executor:            nil,
+			cacheSize:           1,
+			initialCaches:       map[uint64]interface{}{},
+			initialCachesVPower: map[uint64]interface{}{},
+			height:              1,
+			expectedRes:         nil,
+			expectedResVPower:   nil,
+			expectedErr:         errors.New("header not found at 1"),
+			finalCaches:         map[uint64]interface{}{},
+			finalCachesVPower:   map[uint64]interface{}{},
 		},
 		{
 			name: "should return error if FetchValidators failed",
@@ -346,16 +382,19 @@ func TestContractValidatorStoreGetValidators(t *testing.T) {
 					return transitionForECDSAValidators, nil
 				},
 			},
-			cacheSize:     1,
-			initialCaches: map[uint64]interface{}{},
-			validatorType: validators.ValidatorType("fake"),
-			height:        1,
-			expectedRes:   nil,
-			expectedErr:   errors.New("unsupported validator type: fake"),
-			finalCaches:   map[uint64]interface{}{},
+			cacheSize:           1,
+			initialCaches:       map[uint64]interface{}{},
+			initialCachesVPower: map[uint64]interface{}{},
+			validatorType:       validators.ValidatorType("fake"),
+			height:              1,
+			expectedRes:         nil,
+			expectedResVPower:   nil,
+			expectedErr:         errors.New("unsupported validator type: fake"),
+			finalCaches:         map[uint64]interface{}{},
+			finalCachesVPower:   map[uint64]interface{}{},
 		},
 		{
-			name: "should return fetched ECDSA validators",
+			name: "should return fetched ECDSA validators and their voting powers",
 			blockchain: &store.MockBlockchain{
 				GetHeaderByNumberFn: func(height uint64) (*types.Header, bool) {
 					assert.Equal(t, uint64(1), height)
@@ -372,18 +411,23 @@ func TestContractValidatorStoreGetValidators(t *testing.T) {
 					return transitionForECDSAValidators, nil
 				},
 			},
-			cacheSize:     1,
-			initialCaches: map[uint64]interface{}{},
-			validatorType: validators.ECDSAValidatorType,
-			height:        1,
-			expectedRes:   ecdsaValidators,
-			expectedErr:   nil,
+			cacheSize:           1,
+			initialCaches:       map[uint64]interface{}{},
+			initialCachesVPower: map[uint64]interface{}{},
+			validatorType:       validators.ECDSAValidatorType,
+			height:              1,
+			expectedRes:         ecdsaValidators,
+			expectedResVPower:   vPowers,
+			expectedErr:         nil,
 			finalCaches: map[uint64]interface{}{
 				1: ecdsaValidators,
 			},
+			finalCachesVPower: map[uint64]interface{}{
+				1: vPowers,
+			},
 		},
 		{
-			name: "should return fetched BLS validators",
+			name: "should return fetched BLS validators and their voting powers",
 			blockchain: &store.MockBlockchain{
 				GetHeaderByNumberFn: func(height uint64) (*types.Header, bool) {
 					assert.Equal(t, uint64(1), height)
@@ -400,14 +444,19 @@ func TestContractValidatorStoreGetValidators(t *testing.T) {
 					return transitionForBLSValidators, nil
 				},
 			},
-			cacheSize:     1,
-			initialCaches: map[uint64]interface{}{},
-			validatorType: validators.BLSValidatorType,
-			height:        1,
-			expectedRes:   blsValidators,
-			expectedErr:   nil,
+			cacheSize:           1,
+			initialCaches:       map[uint64]interface{}{},
+			initialCachesVPower: map[uint64]interface{}{},
+			validatorType:       validators.BLSValidatorType,
+			height:              1,
+			expectedRes:         blsValidators,
+			expectedResVPower:   vPowers,
+			expectedErr:         nil,
 			finalCaches: map[uint64]interface{}{
 				1: blsValidators,
+			},
+			finalCachesVPower: map[uint64]interface{}{
+				1: vPowers,
 			},
 		},
 	}
@@ -427,21 +476,28 @@ func TestContractValidatorStoreGetValidators(t *testing.T) {
 
 			for height, data := range test.initialCaches {
 				store.validatorSetCache.Add(height, data)
+				store.vpowerSetCache.Add(height, test.initialCachesVPower[height])
 			}
 
-			res, _, err := store.GetValidatorsByHeight(test.validatorType, test.height)
+			res, vPowerRes, err := store.GetValidatorsByHeight(test.validatorType, test.height)
 
 			assert.Equal(t, test.expectedRes, res)
+			assert.Equal(t, test.expectedResVPower, vPowerRes)
 			testHelper.AssertErrorMessageContains(t, test.expectedErr, err)
 
 			// check cache
 			assert.Equal(t, len(test.finalCaches), store.validatorSetCache.Len())
+			assert.Equal(t, len(test.finalCachesVPower), store.vpowerSetCache.Len())
 
 			for height, expected := range test.finalCaches {
 				cache, ok := store.validatorSetCache.Get(height)
+				cacheVPower, okVPower := store.vpowerSetCache.Get(height)
 
 				assert.True(t, ok)
 				assert.Equal(t, expected, cache)
+
+				assert.True(t, okVPower)
+				assert.Equal(t, test.finalCachesVPower[height], cacheVPower)
 			}
 		})
 	}
