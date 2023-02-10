@@ -53,6 +53,15 @@ func newTestBLSKeyBytes() validators.BLSValidatorPublicKey {
 	return buf
 }
 
+func newTestVotingPower(addr types.Address) validators.VotingPower {
+	vPower, err := validators.NewVotingPower(addr, *big.NewInt(15000), *big.NewInt(0), *big.NewInt(85))
+	if err != nil {
+		panic("newTestVotingPower must always return a proper VotingPower")
+	}
+
+	return vPower
+}
+
 func newTestCache(t *testing.T, size int) *lru.Cache {
 	t.Helper()
 
@@ -248,8 +257,8 @@ func TestContractValidatorStoreGetValidators(t *testing.T) {
 		)
 
 		vPowers = validators.NewVotingPowers(
-			validators.NewVotingPower(addr1, *big.NewInt(15000), *big.NewInt(0), *big.NewInt(85)),
-			validators.NewVotingPower(addr2, *big.NewInt(15000), *big.NewInt(0), *big.NewInt(85)),
+			newTestVotingPower(addr1),
+			newTestVotingPower(addr2),
 		)
 
 		blsValidators = validators.NewBLSValidatorSet(
@@ -311,6 +320,32 @@ func TestContractValidatorStoreGetValidators(t *testing.T) {
 			},
 		},
 		{
+			name:       "should return error when loadCachedVotingPowers failed",
+			blockchain: nil,
+			executor:   nil,
+			cacheSize:  1,
+			initialCaches: map[uint64]interface{}{
+				0: validators.NewECDSAValidatorSet(
+					validators.NewECDSAValidator(addr1),
+				),
+			},
+			initialCachesVPower: map[uint64]interface{}{
+				0: string("fake"),
+			},
+			height:            0,
+			expectedRes:       nil,
+			expectedResVPower: nil,
+			expectedErr:       ErrInvalidVPowersTypeAssertion,
+			finalCaches: map[uint64]interface{}{
+				0: validators.NewECDSAValidatorSet(
+					validators.NewECDSAValidator(addr1),
+				),
+			},
+			finalCachesVPower: map[uint64]interface{}{
+				0: string("fake"),
+			},
+		},
+		{
 			name:       "should return validators and their voting powers if cache exists",
 			blockchain: nil,
 			executor:   nil,
@@ -322,7 +357,7 @@ func TestContractValidatorStoreGetValidators(t *testing.T) {
 			},
 			initialCachesVPower: map[uint64]interface{}{
 				0: validators.NewVotingPowers(
-					validators.NewVotingPower(addr1, *big.NewInt(15000), *big.NewInt(0), *big.NewInt(85)),
+					newTestVotingPower(addr1),
 				),
 			},
 			height: 0,
@@ -330,7 +365,7 @@ func TestContractValidatorStoreGetValidators(t *testing.T) {
 				validators.NewECDSAValidator(addr1),
 			),
 			expectedResVPower: validators.NewVotingPowers(
-				validators.NewVotingPower(addr1, *big.NewInt(15000), *big.NewInt(0), *big.NewInt(0)),
+				newTestVotingPower(addr1),
 			),
 			expectedErr: nil,
 			finalCaches: map[uint64]interface{}{
@@ -340,7 +375,7 @@ func TestContractValidatorStoreGetValidators(t *testing.T) {
 			},
 			finalCachesVPower: map[uint64]interface{}{
 				0: validators.NewVotingPowers(
-					validators.NewVotingPower(addr1, *big.NewInt(15000), *big.NewInt(0), *big.NewInt(0)),
+					newTestVotingPower(addr1),
 				),
 			},
 		},

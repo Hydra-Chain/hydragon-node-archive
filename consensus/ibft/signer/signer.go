@@ -57,7 +57,7 @@ type Signer interface {
 		committedSeals Seals,
 		validators validators.Validators,
 		quorumSize big.Int,
-		vpower VPowerGetter,
+		vPower VPowerGetter,
 	) error
 
 	// ParentCommittedSeals
@@ -67,7 +67,7 @@ type Signer interface {
 		parentValidators validators.Validators,
 		quorum big.Int,
 		mustExist bool,
-		vpower VPowerGetter,
+		vPower VPowerGetter,
 	) error
 
 	// IBFTMessage
@@ -246,7 +246,7 @@ func (s *SignerImpl) VerifyCommittedSeals(
 		wrapCommitHash(hash.Bytes()),
 	)
 
-	vpower, err := s.keyManager.VerifyCommittedSeals(
+	vPower, err := s.keyManager.VerifyCommittedSeals(
 		committedSeals,
 		rawMsg,
 		validators,
@@ -256,7 +256,7 @@ func (s *SignerImpl) VerifyCommittedSeals(
 		return err
 	}
 
-	if vpower.Cmp(&quorumSize) == -1 {
+	if vPower.Cmp(&quorumSize) == -1 {
 		return ErrNotEnoughCommittedSeals
 	}
 
@@ -292,7 +292,7 @@ func (s *SignerImpl) VerifyParentCommittedSeals(
 		wrapCommitHash(parentHash[:]),
 	)
 
-	vpower, err := s.keyManager.VerifyCommittedSeals(
+	vPower, err := s.keyManager.VerifyCommittedSeals(
 		parentCommittedSeals,
 		rawMsg,
 		parentValidators,
@@ -302,7 +302,7 @@ func (s *SignerImpl) VerifyParentCommittedSeals(
 		return err
 	}
 
-	if vpower.Cmp(&quorum) == -1 {
+	if vPower.Cmp(&quorum) == -1 {
 		return ErrNotEnoughCommittedSeals
 	}
 

@@ -250,7 +250,7 @@ func createAggregatedBLSPubKeys(
 	vpowerGetter VPowerGetter,
 ) (*bls_sig.MultiPublicKey, *big.Int, error) {
 	zero := big.NewInt(0)
-	vpower := big.NewInt(0)
+	vPower := big.NewInt(0)
 	pubkeys := make([]*bls_sig.PublicKey, 0, vals.Len())
 
 	for idx := 0; idx < vals.Len(); idx++ {
@@ -279,7 +279,7 @@ func createAggregatedBLSPubKeys(
 			return nil, zero, err
 		}
 
-		vpower.Add(vpower, &valPower)
+		vPower.Add(vPower, &valPower)
 	}
 
 	key, err := bls_sig.NewSigPop().AggregatePublicKeys(pubkeys...)
@@ -287,7 +287,7 @@ func createAggregatedBLSPubKeys(
 		return nil, zero, err
 	}
 
-	return key, vpower, nil
+	return key, vPower, nil
 }
 
 func verifyBLSCommittedSealsImpl(
@@ -303,7 +303,7 @@ func verifyBLSCommittedSealsImpl(
 		return zero, ErrEmptyCommittedSeals
 	}
 
-	aggregatedPubKey, vpower, err := createAggregatedBLSPubKeys(vals, committedSeal.Bitmap, vpowerGetter)
+	aggregatedPubKey, vPower, err := createAggregatedBLSPubKeys(vals, committedSeal.Bitmap, vpowerGetter)
 	if err != nil {
 		return zero, fmt.Errorf("failed to aggregate BLS Public Keys: %w", err)
 	}
@@ -322,5 +322,5 @@ func verifyBLSCommittedSealsImpl(
 		return zero, ErrInvalidSignature
 	}
 
-	return vpower, nil
+	return vPower, nil
 }

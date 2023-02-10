@@ -21,6 +21,7 @@ const (
 var (
 	ErrSignerNotFound                 = errors.New("signer not found")
 	ErrInvalidValidatorsTypeAssertion = errors.New("invalid type assertion for Validators")
+	ErrInvalidVPowersTypeAssertion    = errors.New("invalid type assertion for VotingPowers")
 )
 
 type ContractValidatorStore struct {
@@ -79,8 +80,11 @@ func (s *ContractValidatorStore) GetValidatorsByHeight(
 	height uint64,
 ) (validators.Validators, validators.VotingPowers, error) {
 	cachedValidators, err := s.loadCachedValidatorSet(height)
-	cachedVPowers, err := s.loadCachedVotingPowers(height)
+	if err != nil {
+		return nil, nil, err
+	}
 
+	cachedVPowers, err := s.loadCachedVotingPowers(height)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -147,7 +151,7 @@ func (s *ContractValidatorStore) loadCachedVotingPowers(height uint64) (validato
 
 	vPowers, ok := cachedRawVPowers.(validators.VotingPowers)
 	if !ok {
-		return nil, ErrInvalidValidatorsTypeAssertion
+		return nil, ErrInvalidVPowersTypeAssertion
 	}
 
 	return vPowers, nil

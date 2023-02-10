@@ -24,28 +24,6 @@ func CalcMaxFaultyNodes(s validators.Validators) int {
 
 type QuorumImplementation func(validators.Validators, validators.VotingPowers) big.Int
 
-// LegacyQuorumSize returns the legacy quorum size for the given validator set
-func LegacyQuorumSize(set validators.Validators, vpowers validators.VotingPowers) big.Int {
-	tVotingPower := vpowers.GetTVotingPower()
-	//	if the number of validators is less than 4,
-	//	then the entire set is required
-	if CalcMaxFaultyNodes(set) == 0 {
-		/*
-			N: 1 -> Q: 1
-			N: 2 -> Q: 2
-			N: 3 -> Q: 3
-		*/
-		return tVotingPower
-	}
-
-	// (quorum optimal)	Q = ceil(2/3 * N)
-	// H_MODIFY: qorum = 61.4% of total voting power (voting power * 614/1000)
-	// assume that voting power would be always bigger than 15000
-	// TODO: Add unit tests for quorum calc
-	divisible := tVotingPower.Mul(&tVotingPower, big.NewInt(614))
-	return *divisible.Div(divisible, big.NewInt(1000))
-}
-
 // OptimalQuorumSize returns the optimal quorum size for the given validator set
 // H_MODIFY: We change the quorum calculation to be based on the staked balance.
 // That way we enable the delegation functionality

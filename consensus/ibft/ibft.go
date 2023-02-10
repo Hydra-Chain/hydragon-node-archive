@@ -461,11 +461,8 @@ func (i *backendIBFT) VerifyHeader(header *types.Header) error {
 // quorumSize returns a callback that when executed on a Validators computes
 // number of votes required to reach quorum based on the size of the set.
 // The blockNumber argument indicates which formula was used to calculate the result (see PRs #513, #549)
+// H_MODIFY: No need of legacy quorum size in new chain
 func (i *backendIBFT) quorumSize(blockNumber uint64) QuorumImplementation {
-	if blockNumber < i.quorumSizeBlockNum {
-		return LegacyQuorumSize
-	}
-
 	return OptimalQuorumSize
 }
 

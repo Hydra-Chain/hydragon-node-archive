@@ -95,10 +95,14 @@ func (ap *testerAccountPool) ValidatorSet() validators.Validators {
 func (ap *testerAccountPool) VPowers() validators.VotingPowers {
 	ap.t.Helper()
 
-	// v := validators.NewECDSAValidatorSet()
 	v := validators.NewVotingPowers()
 	for _, i := range ap.accounts {
-		_ = v.Add(validators.NewVotingPower(i.Address(), *big.NewInt(15000), *big.NewInt(0), *big.NewInt(85)))
+		vPower, err := validators.NewVotingPower(i.Address(), *big.NewInt(15000), *big.NewInt(0), *big.NewInt(85))
+		if err != nil {
+			panic(err)
+		}
+
+		_ = v.Add(vPower)
 	}
 
 	return v

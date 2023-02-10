@@ -539,6 +539,21 @@ func TestECDSAKeyManager_verifyCommittedSealsImpl(t *testing.T) {
 			expectedErr: ErrNonValidatorCommittedSeal,
 		},
 		{
+			name: "should return error ErrVPowerNotFound if Voting Power of validator is not found",
+			committedSeals: &SerializedSeal{
+				correctCommittedSeal,
+			},
+			msg: msg,
+			validators: validators.NewECDSAValidatorSet(
+				validators.NewECDSAValidator(
+					ecdsaKeyManager1.Address(),
+				),
+			),
+			vpowers:     validators.NewVotingPowers(),
+			expectedRes: big.NewInt(0),
+			expectedErr: validators.ErrVPowerNotFound,
+		},
+		{
 			name: "should return the voting power of CommittedSeals if verification is successful",
 			committedSeals: &SerializedSeal{
 				correctCommittedSeal,

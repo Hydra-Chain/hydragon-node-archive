@@ -61,9 +61,6 @@ func TestNumValid(t *testing.T) {
 		pool := newTesterAccountPool(t, int(c.Network))
 		addAccounts(pool, int(c.Network))
 
-		t.Log("weereeeeeeeeeeeeeeeeeeee")
-		t.Log(pool.VPowers().GetVotingPower(pool.accounts[0].Address()))
-
 		assert.Equal(t,
 			c.Quorum,
 			OptimalQuorumSize(pool.ValidatorSet(), pool.VPowers()),

@@ -147,7 +147,7 @@ func (s *ECDSAKeyManager) verifyCommittedSealsImpl(
 	VPowerGetter VPowerGetter,
 ) (*big.Int, error) {
 	zero := big.NewInt(0)
-	vpower := big.NewInt(0)
+	vPower := big.NewInt(0)
 	numSeals := committedSeal.Num()
 	if numSeals == 0 {
 		return zero, ErrEmptyCommittedSeals
@@ -175,10 +175,10 @@ func (s *ECDSAKeyManager) verifyCommittedSealsImpl(
 			return zero, err
 		}
 
-		vpower.Add(vpower, &valPower)
+		vPower.Add(vPower, &valPower)
 	}
 
-	return vpower, nil
+	return vPower, nil
 }
 
 type SerializedSeal [][]byte

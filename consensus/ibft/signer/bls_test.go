@@ -64,14 +64,18 @@ func testBLSKeyManagerToBLSValidator(t *testing.T, keyManager KeyManager) *valid
 func testBLSKeyManagerToVPower(t *testing.T, keyManager KeyManager) validators.VotingPower {
 	t.Helper()
 
-	return validators.NewVotingPower(keyManager.Address(), *big.NewInt(15000), *big.NewInt(0), *big.NewInt(85))
+	vPower, err := validators.NewVotingPower(keyManager.Address(), *big.NewInt(15000), *big.NewInt(0), *big.NewInt(85))
+	if err != nil {
+		panic("testBLSKeyManagerToVPower must always return a proper VotingPower")
+	}
+
+	return vPower
 }
 
 func testBLSKeyManagerToVPowers(t *testing.T, keyManager KeyManager) validators.VotingPowers {
 	t.Helper()
 
 	set := validators.NewVotingPowers()
-
 	err := set.Add(testBLSKeyManagerToVPower(t, keyManager))
 	if err != nil {
 		panic(err)
@@ -914,6 +918,25 @@ func Test_createAggregatedBLSPubKeys(t *testing.T) {
 		assert.Nil(t, aggrecatedPubKeys)
 		assert.True(t, len(num.Bits()) == 0)
 		assert.ErrorContains(t, err, "public key must be 48 bytes")
+	})
+
+	t.Run("should return error if vPower not found", func(t *testing.T) {
+		t.Parallel()
+		blsKeyManager, _, _ := newTestBLSKeyManager(t)
+		aggrecatedPubKeys, num, err := createAggregatedBLSPubKeys(
+			validators.NewBLSValidatorSet(
+				testBLSKeyManagerToBLSValidator(
+					t,
+					blsKeyManager,
+				),
+			),
+			new(big.Int).SetBit(new(big.Int), 0, 1),
+			validators.NewVotingPowers(),
+		)
+
+		assert.Nil(t, aggrecatedPubKeys)
+		assert.True(t, len(num.Bits()) == 0)
+		assert.ErrorContains(t, err, "validator voting power not found in validators' voting powers")
 	})
 }
 

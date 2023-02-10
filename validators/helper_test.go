@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"math/big"
 	"testing"
 
 	testHelper "github.com/0xPolygon/polygon-edge/helper/tests"
@@ -23,6 +24,10 @@ var (
 	blsValidator2   = NewBLSValidator(addr2, testBLSPubKey2)
 
 	fakeValidatorType = ValidatorType("fake")
+
+	testStakedBalance       = big.NewInt(15000)
+	testDelegatedBalance    = big.NewInt(0)
+	testdelegationWeightBps = big.NewInt(85)
 )
 
 func createTestBLSValidatorString(

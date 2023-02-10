@@ -9,6 +9,11 @@ import (
 	msgProto "github.com/0xPolygon/go-ibft/messages/proto"
 )
 
+var (
+	ErrInvalidDelWeightBps      = errors.New("invalid delegation weight bps")
+	ErrVotingPowerAlreadyExists = errors.New("voting power already exists in voting powers set")
+)
+
 // Represents VotingPower of a Validator
 type votingPower struct {
 	value      *big.Int
@@ -16,20 +21,20 @@ type votingPower struct {
 }
 
 // NewVotingPower Creates a new VotingPower and return its reference
-func NewVotingPower(valAddress types.Address, stakedBalance big.Int, delegatedBalance big.Int, delegationWeightBps big.Int) VotingPower {
+func NewVotingPower(valAddress types.Address, stakedBalance big.Int, delegatedBalance big.Int, delegationWeightBps big.Int) (VotingPower, error) {
 	v, err := calculateVotingPower(&stakedBalance, &delegatedBalance, &delegationWeightBps)
 	if err != nil {
-		return nil
+		return nil, err
 	}
 
-	return &votingPower{value: v, valAddress: &valAddress}
+	return &votingPower{value: v, valAddress: &valAddress}, nil
 }
 
 func (v *votingPower) GetValue() big.Int {
 	return *v.value
 }
 
-func (v *votingPower) VallAddress() types.Address {
+func (v *votingPower) ValAddress() types.Address {
 	return *v.valAddress
 }
 
@@ -40,7 +45,7 @@ func calculateVotingPower(
 	delegationWeightBps *big.Int, // delegationWeightBps / 1000 = delegation weight exponent
 ) (*big.Int, error) {
 	if delegationWeightBps.Cmp(big.NewInt(0)) == -1 || delegationWeightBps.Cmp(big.NewInt(1000)) == 1 {
-		return nil, errors.New("invalid delegation weight bps")
+		return nil, ErrInvalidDelWeightBps
 	}
 
 	denominator := big.NewInt(1000)
@@ -59,7 +64,7 @@ type votingPowers struct {
 	values      []VotingPower
 }
 
-// NewVotingPowers creates an empty VotingPowers struct
+// NewVotingPowers creates a new VotingPowers struct
 func NewVotingPowers(vpowers ...VotingPower) VotingPowers {
 	values := make([]VotingPower, len(vpowers))
 	totalVPower := big.NewInt(0)
@@ -80,8 +85,8 @@ func NewVotingPowers(vpowers ...VotingPower) VotingPowers {
 // Add adds a voting power into the collection
 // Updates the value if already added
 func (vv *votingPowers) Add(v VotingPower) error {
-	if vv.Includes(v.VallAddress()) {
-		return ErrValidatorAlreadyExists
+	if vv.Includes(v.ValAddress()) {
+		return ErrVotingPowerAlreadyExists
 	}
 
 	vv.values = append(vv.values, v)
@@ -91,6 +96,7 @@ func (vv *votingPowers) Add(v VotingPower) error {
 }
 
 // At returns a validator's Voting Power at specified index in the collection
+// check outside the function does the index exists
 func (vv *votingPowers) At(index uint64) VotingPower {
 	return vv.values[index]
 }
@@ -98,7 +104,7 @@ func (vv *votingPowers) At(index uint64) VotingPower {
 // Index returns the index of the VotingPower whose validator's address matches with the given address
 func (vv *votingPowers) Index(addr types.Address) int64 {
 	for i, val := range vv.values {
-		if val.VallAddress() == addr {
+		if val.ValAddress() == addr {
 			return int64(i)
 		}
 	}
@@ -133,11 +139,11 @@ func (vv *votingPowers) increaseVotingPower(amount big.Int) {
 func (vv *votingPowers) CalcMessagesPower(messages []*msgProto.Message) (big.Int, error) {
 	sum := big.NewInt(0)
 	for _, msg := range messages {
-		vpower, err := vv.GetVotingPower(types.BytesToAddress(msg.From))
+		vPower, err := vv.GetVotingPower(types.BytesToAddress(msg.GetFrom()))
 		if err != nil {
 			return *big.NewInt(0), err
 		}
-		sum.Add(sum, &vpower)
+		sum.Add(sum, &vPower)
 	}
 
 	return *sum, nil

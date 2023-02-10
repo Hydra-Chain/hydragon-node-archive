@@ -42,7 +42,6 @@ var (
 	)
 
 	vPowers = newTestVPowersSetFromVals(ecdsaValidators)
-	// vPowers
 
 	testProposerSeal     = crypto.Keccak256([]byte{0x1})
 	testSerializedSeals1 = &SerializedSeal{[]byte{0x1}, []byte{0x2}}
@@ -54,7 +53,12 @@ var (
 func newTestVPowersSetFromVals(vals validators.Validators) validators.VotingPowers {
 	vPowers := validators.NewVotingPowers()
 	for i := 0; i < vals.Len(); i++ {
-		vPowers.Add(validators.NewVotingPower(vals.At(uint64(i)).Addr(), *big.NewInt(15000), *big.NewInt(0), *big.NewInt(85)))
+		vPower, err := validators.NewVotingPower(vals.At(uint64(i)).Addr(), *big.NewInt(15000), *big.NewInt(0), *big.NewInt(85))
+		if err != nil {
+			panic("newTestVPowersSetFromVals should always return a proper Voting Power")
+		}
+
+		vPowers.Add(vPower)
 	}
 
 	return vPowers

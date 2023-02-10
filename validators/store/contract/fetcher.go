@@ -45,7 +45,12 @@ func FetchECDSAValidators(
 			return nil, nil, err
 		}
 
-		if err := votingPowers.Add(validators.NewVotingPower(addr, *big.NewInt(15000), *big.NewInt(0), *big.NewInt(85))); err != nil {
+		vPower, err := validators.NewVotingPower(addr, *big.NewInt(15000), *big.NewInt(0), *big.NewInt(85))
+		if err != nil {
+			return ecdsaValidators, nil, err
+		}
+
+		if err := votingPowers.Add(vPower); err != nil {
 			return ecdsaValidators, nil, err
 		}
 	}
@@ -87,7 +92,12 @@ func FetchBLSValidators(
 			return nil, nil, err
 		}
 
-		if err := votingPowers.Add(validators.NewVotingPower(valAddrs[idx], *big.NewInt(15000), *big.NewInt(0), *big.NewInt(85))); err != nil {
+		vPower, err := validators.NewVotingPower(valAddrs[idx], *big.NewInt(15000), *big.NewInt(0), *big.NewInt(85))
+		if err != nil {
+			return blsValidators, nil, err
+		}
+
+		if err := votingPowers.Add(vPower); err != nil {
 			return blsValidators, nil, err
 		}
 	}
