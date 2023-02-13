@@ -108,6 +108,14 @@ func (i *backendIBFT) InsertProposal(
 
 	i.updateMetrics(newBlock)
 
+	vpowers, err := i.forkManager.GetVPowers(newBlock.Number())
+	if err != nil {
+		i.logger.Error("cannot get voting powers", "err", err)
+		return
+	}
+
+	totalVPower := vpowers.GetTVotingPower()
+
 	i.logger.Info(
 		"block committed",
 		"number", newBlock.Number(),
@@ -115,6 +123,7 @@ func (i *backendIBFT) InsertProposal(
 		"validation_type", i.currentSigner.Type(),
 		"validators", i.currentValidators.Len(),
 		"committed", len(committedSeals),
+		"voting_power", totalVPower.String(),
 	)
 
 	if err := i.currentHooks.PostInsertBlock(newBlock); err != nil {
@@ -160,16 +169,16 @@ func (i *backendIBFT) HasQuorum(
 			return false
 		}
 
-		decreasedQuorum := quorum.Sub(quorum, &signerPower)
+		decreasedQuorum := big.NewInt(0).Sub(quorum, &signerPower)
 
-		return msgPower.Cmp(decreasedQuorum) == -1
+		return msgPower.Cmp(decreasedQuorum) != -1
 	case proto.MessageType_COMMIT, proto.MessageType_ROUND_CHANGE:
 		_, quorum, msgPower, err := i.getQuorumData(blockNumber, messages)
 		if err != nil {
 			return false
 		}
 
-		return msgPower.Cmp(quorum) == -1
+		return msgPower.Cmp(quorum) != -1
 	default:
 		return false
 	}

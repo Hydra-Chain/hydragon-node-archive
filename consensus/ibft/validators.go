@@ -43,8 +43,7 @@ func OptimalQuorumSize(set validators.Validators, vpowers validators.VotingPower
 	// (quorum optimal)	Q = ceil(2/3 * N)
 	// H_MODIFY: qorum = 61.4% of total voting power (voting power * 614/1000)
 	// assume that voting power would be always at least 15000
-	// TODO: Add unit tests for quorum calc
-	divisible := tVotingPower.Mul(&tVotingPower, big.NewInt(614))
+	divisible := big.NewInt(0).Mul(&tVotingPower, big.NewInt(614))
 	return *divisible.Div(divisible, big.NewInt(1000))
 }
 
