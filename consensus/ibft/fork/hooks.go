@@ -72,6 +72,7 @@ func registerTxInclusionGuardHooks(hooks *hook.Hooks, epochSize uint64) {
 		return !isLastEpoch(height)
 	}
 
+	// TODO: VerifyBlock must be changed if we distribute rewards in epoch block
 	hooks.VerifyBlockFunc = func(block *types.Block) error {
 		if isLastEpoch(block.Number()) && len(block.Transactions) > 0 {
 			return ErrTxInLastEpochOfBlock

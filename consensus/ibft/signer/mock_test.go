@@ -1,6 +1,8 @@
 package signer
 
 import (
+	"math/big"
+
 	"github.com/0xPolygon/polygon-edge/secrets"
 	"github.com/0xPolygon/polygon-edge/types"
 	"github.com/0xPolygon/polygon-edge/validators"
@@ -36,7 +38,7 @@ type MockKeyManager struct {
 	SignCommittedSealFunc      func([]byte) ([]byte, error)
 	VerifyCommittedSealFunc    func(validators.Validators, types.Address, []byte, []byte) error
 	GenerateCommittedSealsFunc func(map[types.Address][]byte, validators.Validators) (Seals, error)
-	VerifyCommittedSealsFunc   func(Seals, []byte, validators.Validators) (int, error)
+	VerifyCommittedSealsFunc   func(Seals, []byte, validators.Validators, VPowerGetter) (*big.Int, error)
 	SignIBFTMessageFunc        func([]byte) ([]byte, error)
 	EcrecoverFunc              func([]byte, []byte) (types.Address, error)
 }
@@ -76,8 +78,8 @@ func (m *MockKeyManager) GenerateCommittedSeals(
 	return m.GenerateCommittedSealsFunc(sealsByValidator, vals)
 }
 
-func (m *MockKeyManager) VerifyCommittedSeals(seals Seals, hash []byte, vals validators.Validators) (int, error) {
-	return m.VerifyCommittedSealsFunc(seals, hash, vals)
+func (m *MockKeyManager) VerifyCommittedSeals(seals Seals, hash []byte, vals validators.Validators, vPowerGetter VPowerGetter) (*big.Int, error) {
+	return m.VerifyCommittedSealsFunc(seals, hash, vals, vPowerGetter)
 }
 
 func (m *MockKeyManager) SignIBFTMessage(msg []byte) ([]byte, error) {

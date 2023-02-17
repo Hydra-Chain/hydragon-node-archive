@@ -21,6 +21,7 @@ const (
 var (
 	ErrSignerNotFound                 = errors.New("signer not found")
 	ErrInvalidValidatorsTypeAssertion = errors.New("invalid type assertion for Validators")
+	ErrInvalidVPowersTypeAssertion    = errors.New("invalid type assertion for VotingPowers")
 )
 
 type ContractValidatorStore struct {
@@ -30,6 +31,9 @@ type ContractValidatorStore struct {
 
 	// LRU cache for the validators
 	validatorSetCache *lru.Cache
+
+	// LRU cache for the voting powers
+	vpowerSetCache *lru.Cache
 }
 
 type Executor interface {
@@ -44,12 +48,17 @@ func NewContractValidatorStore(
 ) (*ContractValidatorStore, error) {
 	var (
 		validatorsCache *lru.Cache
+		vPowersCache    *lru.Cache
 		err             error
 	)
 
 	if validatorSetCacheSize > 0 {
 		if validatorsCache, err = lru.New(validatorSetCacheSize); err != nil {
 			return nil, fmt.Errorf("unable to create validator set cache, %w", err)
+		}
+
+		if vPowersCache, err = lru.New(validatorSetCacheSize); err != nil {
+			return nil, fmt.Errorf("unable to create voting powers set cache, %w", err)
 		}
 	}
 
@@ -58,6 +67,7 @@ func NewContractValidatorStore(
 		blockchain:        blockchain,
 		executor:          executor,
 		validatorSetCache: validatorsCache,
+		vpowerSetCache:    vPowersCache,
 	}, nil
 }
 
@@ -68,29 +78,35 @@ func (s *ContractValidatorStore) SourceType() store.SourceType {
 func (s *ContractValidatorStore) GetValidatorsByHeight(
 	validatorType validators.ValidatorType,
 	height uint64,
-) (validators.Validators, error) {
+) (validators.Validators, validators.VotingPowers, error) {
 	cachedValidators, err := s.loadCachedValidatorSet(height)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	if cachedValidators != nil {
-		return cachedValidators, nil
+	cachedVPowers, err := s.loadCachedVotingPowers(height)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if cachedValidators != nil && cachedVPowers != nil {
+		return cachedValidators, cachedVPowers, nil
 	}
 
 	transition, err := s.getTransitionForQuery(height)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	fetchedValidators, err := FetchValidators(validatorType, transition, types.ZeroAddress)
+	fetchedValidators, fetchedVPowers, err := FetchValidators(validatorType, transition, types.ZeroAddress)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	s.saveToValidatorSetCache(height, fetchedValidators)
+	s.saveToVotingPowersCache(height, fetchedVPowers)
 
-	return fetchedValidators, nil
+	return fetchedValidators, fetchedVPowers, nil
 }
 
 func (s *ContractValidatorStore) getTransitionForQuery(height uint64) (*state.Transition, error) {
@@ -124,4 +140,28 @@ func (s *ContractValidatorStore) saveToValidatorSetCache(height uint64, validato
 	}
 
 	return s.validatorSetCache.Add(height, validators)
+}
+
+// loadCachedVotingPowers loads validators from vpowerSetCache
+func (s *ContractValidatorStore) loadCachedVotingPowers(height uint64) (validators.VotingPowers, error) {
+	cachedRawVPowers, ok := s.vpowerSetCache.Get(height)
+	if !ok {
+		return nil, nil
+	}
+
+	vPowers, ok := cachedRawVPowers.(validators.VotingPowers)
+	if !ok {
+		return nil, ErrInvalidVPowersTypeAssertion
+	}
+
+	return vPowers, nil
+}
+
+// saveToVotingPowersCache saves validators' VotingPowers to vpowerSetCache
+func (s *ContractValidatorStore) saveToVotingPowersCache(height uint64, vpowers validators.VotingPowers) bool {
+	if s.vpowerSetCache == nil {
+		return false
+	}
+
+	return s.vpowerSetCache.Add(height, vpowers)
 }

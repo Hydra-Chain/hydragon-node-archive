@@ -2,6 +2,7 @@ package ibft
 
 import (
 	"crypto/ecdsa"
+	"math/big"
 	"strconv"
 	"testing"
 
@@ -86,6 +87,22 @@ func (ap *testerAccountPool) ValidatorSet() validators.Validators {
 		_ = v.Add(&validators.ECDSAValidator{
 			Address: i.Address(),
 		})
+	}
+
+	return v
+}
+
+func (ap *testerAccountPool) VPowers() validators.VotingPowers {
+	ap.t.Helper()
+
+	v := validators.NewVotingPowers()
+	for _, i := range ap.accounts {
+		vPower, err := validators.NewVotingPower(i.Address(), *big.NewInt(15000), *big.NewInt(0), *big.NewInt(85))
+		if err != nil {
+			panic(err)
+		}
+
+		_ = v.Add(vPower)
 	}
 
 	return v

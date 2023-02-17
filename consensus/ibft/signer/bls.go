@@ -137,17 +137,19 @@ func (s *BLSKeyManager) VerifyCommittedSeals(
 	rawCommittedSeal Seals,
 	message []byte,
 	vals validators.Validators,
-) (int, error) {
+	vPowerGetter VPowerGetter,
+) (*big.Int, error) {
+	zero := big.NewInt(0)
 	committedSeal, ok := rawCommittedSeal.(*AggregatedSeal)
 	if !ok {
-		return 0, ErrInvalidCommittedSealType
+		return zero, ErrInvalidCommittedSealType
 	}
 
 	if vals.Type() != s.Type() {
-		return 0, ErrInvalidValidators
+		return zero, ErrInvalidValidators
 	}
 
-	return verifyBLSCommittedSealsImpl(committedSeal, message, vals)
+	return verifyBLSCommittedSealsImpl(committedSeal, message, vals, vPowerGetter)
 }
 
 func (s *BLSKeyManager) SignIBFTMessage(msg []byte) ([]byte, error) {
@@ -245,7 +247,10 @@ func getBLSSignatures(
 func createAggregatedBLSPubKeys(
 	vals validators.Validators,
 	bitMap *big.Int,
-) (*bls_sig.MultiPublicKey, int, error) {
+	vpowerGetter VPowerGetter,
+) (*bls_sig.MultiPublicKey, *big.Int, error) {
+	zero := big.NewInt(0)
+	vPower := big.NewInt(0)
 	pubkeys := make([]*bls_sig.PublicKey, 0, vals.Len())
 
 	for idx := 0; idx < vals.Len(); idx++ {
@@ -255,59 +260,67 @@ func createAggregatedBLSPubKeys(
 
 		validator := vals.At(uint64(idx))
 		if validator == nil {
-			return nil, 0, ErrValidatorNotFound
+			return nil, zero, ErrValidatorNotFound
 		}
 
 		blsValidator, ok := validator.(*validators.BLSValidator)
 		if !ok {
-			return nil, 0, ErrInvalidValidator
+			return nil, zero, ErrInvalidValidator
 		}
 
 		pubKey, err := crypto.UnmarshalBLSPublicKey(blsValidator.BLSPublicKey)
 		if err != nil {
-			return nil, 0, err
+			return nil, zero, err
 		}
 
 		pubkeys = append(pubkeys, pubKey)
+		valPower, err := vpowerGetter.GetVotingPower(blsValidator.Address)
+		if err != nil {
+			return nil, zero, err
+		}
+
+		vPower.Add(vPower, &valPower)
 	}
 
 	key, err := bls_sig.NewSigPop().AggregatePublicKeys(pubkeys...)
 	if err != nil {
-		return nil, 0, err
+		return nil, zero, err
 	}
 
-	return key, len(pubkeys), nil
+	return key, vPower, nil
 }
 
 func verifyBLSCommittedSealsImpl(
 	committedSeal *AggregatedSeal,
 	msg []byte,
 	vals validators.Validators,
-) (int, error) {
+	vpowerGetter VPowerGetter,
+) (*big.Int, error) {
+	zero := big.NewInt(0)
 	if len(committedSeal.Signature) == 0 ||
 		committedSeal.Bitmap == nil ||
 		committedSeal.Bitmap.BitLen() == 0 {
-		return 0, ErrEmptyCommittedSeals
+		return zero, ErrEmptyCommittedSeals
 	}
 
-	aggregatedPubKey, numKeys, err := createAggregatedBLSPubKeys(vals, committedSeal.Bitmap)
+	aggregatedPubKey, vPower, err := createAggregatedBLSPubKeys(vals, committedSeal.Bitmap, vpowerGetter)
 	if err != nil {
-		return 0, fmt.Errorf("failed to aggregate BLS Public Keys: %w", err)
+		return zero, fmt.Errorf("failed to aggregate BLS Public Keys: %w", err)
 	}
 
 	signature := &bls_sig.MultiSignature{}
 	if err := signature.UnmarshalBinary(committedSeal.Signature); err != nil {
-		return 0, err
+		return zero, err
 	}
 
 	ok, err := bls_sig.NewSigPop().VerifyMultiSignature(aggregatedPubKey, msg, signature)
 	if err != nil {
-		return 0, err
+		return zero, err
 	}
 
 	if !ok {
-		return 0, ErrInvalidSignature
+		return zero, ErrInvalidSignature
 	}
 
-	return numKeys, nil
+	return vPower, nil
 }

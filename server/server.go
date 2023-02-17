@@ -410,6 +410,7 @@ func (s *Server) setupSecretsManager() error {
 // setupConsensus sets up the consensus mechanism
 func (s *Server) setupConsensus() error {
 	engineName := s.config.Chain.Params.GetEngine()
+	// engine is IBFT Factory
 	engine, ok := consensusBackends[ConsensusType(engineName)]
 
 	if !ok {

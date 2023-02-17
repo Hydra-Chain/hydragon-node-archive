@@ -2,6 +2,7 @@ package contract
 
 import (
 	"fmt"
+	"math/big"
 
 	"github.com/0xPolygon/polygon-edge/contracts/staking"
 	"github.com/0xPolygon/polygon-edge/crypto"
@@ -15,7 +16,7 @@ func FetchValidators(
 	validatorType validators.ValidatorType,
 	transition *state.Transition,
 	from types.Address,
-) (validators.Validators, error) {
+) (validators.Validators, validators.VotingPowers, error) {
 	switch validatorType {
 	case validators.ECDSAValidatorType:
 		return FetchECDSAValidators(transition, from)
@@ -23,45 +24,58 @@ func FetchValidators(
 		return FetchBLSValidators(transition, from)
 	}
 
-	return nil, fmt.Errorf("unsupported validator type: %s", validatorType)
+	return nil, nil, fmt.Errorf("unsupported validator type: %s", validatorType)
 }
 
 // FetchECDSAValidators queries a contract for validator addresses and returns ECDSAValidators
+// TODO: Modify based on contract implementation
 func FetchECDSAValidators(
 	transition *state.Transition,
 	from types.Address,
-) (validators.Validators, error) {
+) (validators.Validators, validators.VotingPowers, error) {
 	valAddrs, err := staking.QueryValidators(transition, from)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	ecdsaValidators := validators.NewECDSAValidatorSet()
+	votingPowers := validators.NewVotingPowers()
 	for _, addr := range valAddrs {
 		if err := ecdsaValidators.Add(validators.NewECDSAValidator(addr)); err != nil {
-			return nil, err
+			return nil, nil, err
+		}
+
+		vPower, err := validators.NewVotingPower(addr, *big.NewInt(15000), *big.NewInt(0), *big.NewInt(85))
+		if err != nil {
+			return ecdsaValidators, nil, err
+		}
+
+		if err := votingPowers.Add(vPower); err != nil {
+			return ecdsaValidators, nil, err
 		}
 	}
 
-	return ecdsaValidators, nil
+	return ecdsaValidators, votingPowers, nil
 }
 
 // FetchBLSValidators queries a contract for validator addresses & BLS Public Keys and returns ECDSAValidators
+// TODO: Modify based on contract implementation
 func FetchBLSValidators(
 	transition *state.Transition,
 	from types.Address,
-) (validators.Validators, error) {
+) (validators.Validators, validators.VotingPowers, error) {
 	valAddrs, err := staking.QueryValidators(transition, from)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	blsPublicKeys, err := staking.QueryBLSPublicKeys(transition, from)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	blsValidators := validators.NewBLSValidatorSet()
+	votingPowers := validators.NewVotingPowers()
 
 	for idx := range valAddrs {
 		// ignore the validator whose BLS Key is not set
@@ -75,9 +89,18 @@ func FetchBLSValidators(
 			valAddrs[idx],
 			blsPublicKeys[idx],
 		)); err != nil {
-			return nil, err
+			return nil, nil, err
+		}
+
+		vPower, err := validators.NewVotingPower(valAddrs[idx], *big.NewInt(15000), *big.NewInt(0), *big.NewInt(85))
+		if err != nil {
+			return blsValidators, nil, err
+		}
+
+		if err := votingPowers.Add(vPower); err != nil {
+			return blsValidators, nil, err
 		}
 	}
 
-	return blsValidators, nil
+	return blsValidators, votingPowers, nil
 }

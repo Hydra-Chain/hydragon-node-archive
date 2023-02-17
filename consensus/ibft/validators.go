@@ -1,7 +1,7 @@
 package ibft
 
 import (
-	"math"
+	"math/big"
 
 	"github.com/0xPolygon/polygon-edge/types"
 	"github.com/0xPolygon/polygon-edge/validators"
@@ -22,17 +22,13 @@ func CalcMaxFaultyNodes(s validators.Validators) int {
 	return (s.Len() - 1) / 3
 }
 
-type QuorumImplementation func(validators.Validators) int
-
-// LegacyQuorumSize returns the legacy quorum size for the given validator set
-func LegacyQuorumSize(set validators.Validators) int {
-	// According to the IBFT spec, the number of valid messages
-	// needs to be 2F + 1
-	return 2*CalcMaxFaultyNodes(set) + 1
-}
+type QuorumImplementation func(validators.Validators, validators.VotingPowers) big.Int
 
 // OptimalQuorumSize returns the optimal quorum size for the given validator set
-func OptimalQuorumSize(set validators.Validators) int {
+// H_MODIFY: We change the quorum calculation to be based on the staked balance.
+// That way we enable the delegation functionality
+func OptimalQuorumSize(set validators.Validators, vpowers validators.VotingPowers) big.Int {
+	tVotingPower := vpowers.GetTVotingPower()
 	//	if the number of validators is less than 4,
 	//	then the entire set is required
 	if CalcMaxFaultyNodes(set) == 0 {
@@ -41,11 +37,14 @@ func OptimalQuorumSize(set validators.Validators) int {
 			N: 2 -> Q: 2
 			N: 3 -> Q: 3
 		*/
-		return set.Len()
+		return tVotingPower
 	}
 
 	// (quorum optimal)	Q = ceil(2/3 * N)
-	return int(math.Ceil(2 * float64(set.Len()) / 3))
+	// H_MODIFY: qorum = 61.4% of total voting power (voting power * 614/1000)
+	// assume that voting power would be always at least 15000
+	divisible := big.NewInt(0).Mul(&tVotingPower, big.NewInt(614))
+	return *divisible.Div(divisible, big.NewInt(1000))
 }
 
 func CalcProposer(

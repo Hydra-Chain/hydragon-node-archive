@@ -1,6 +1,7 @@
 package ibft
 
 import (
+	"math/big"
 	"strconv"
 	"testing"
 
@@ -32,17 +33,18 @@ func TestState_FaultyNodes(t *testing.T) {
 // correctly based on number of validators (network size).
 func TestNumValid(t *testing.T) {
 	cases := []struct {
-		Network, Quorum uint64
+		Network uint64
+		Quorum  big.Int
 	}{
-		{1, 1},
-		{2, 2},
-		{3, 3},
-		{4, 3},
-		{5, 4},
-		{6, 4},
-		{7, 5},
-		{8, 6},
-		{9, 6},
+		{1, *big.NewInt(15000)},
+		{2, *big.NewInt(30000)},
+		{3, *big.NewInt(45000)},
+		{4, *big.NewInt(36840)},
+		{5, *big.NewInt(46050)},
+		{6, *big.NewInt(55260)},
+		{7, *big.NewInt(64470)},
+		{8, *big.NewInt(73680)},
+		{9, *big.NewInt(82890)},
 	}
 
 	addAccounts := func(
@@ -60,8 +62,8 @@ func TestNumValid(t *testing.T) {
 		addAccounts(pool, int(c.Network))
 
 		assert.Equal(t,
-			int(c.Quorum),
-			OptimalQuorumSize(pool.ValidatorSet()),
+			c.Quorum,
+			OptimalQuorumSize(pool.ValidatorSet(), pool.VPowers()),
 		)
 	}
 }

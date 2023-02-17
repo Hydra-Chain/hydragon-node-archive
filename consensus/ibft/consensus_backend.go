@@ -3,6 +3,7 @@ package ibft
 import (
 	"context"
 	"fmt"
+	"math/big"
 	"time"
 
 	"github.com/0xPolygon/go-ibft/messages"
@@ -12,6 +13,7 @@ import (
 	"github.com/0xPolygon/polygon-edge/helper/hex"
 	"github.com/0xPolygon/polygon-edge/state"
 	"github.com/0xPolygon/polygon-edge/types"
+	"github.com/0xPolygon/polygon-edge/validators"
 )
 
 func (i *backendIBFT) BuildProposal(view *proto.View) []byte {
@@ -106,6 +108,14 @@ func (i *backendIBFT) InsertProposal(
 
 	i.updateMetrics(newBlock)
 
+	vpowers, err := i.forkManager.GetVPowers(newBlock.Number())
+	if err != nil {
+		i.logger.Error("cannot get voting powers", "err", err)
+		return
+	}
+
+	totalVPower := vpowers.GetTVotingPower()
+
 	i.logger.Info(
 		"block committed",
 		"number", newBlock.Number(),
@@ -113,6 +123,7 @@ func (i *backendIBFT) InsertProposal(
 		"validation_type", i.currentSigner.Type(),
 		"validators", i.currentValidators.Len(),
 		"committed", len(committedSeals),
+		"voting_power", totalVPower.String(),
 	)
 
 	if err := i.currentHooks.PostInsertBlock(newBlock); err != nil {
@@ -144,31 +155,36 @@ func (i *backendIBFT) HasQuorum(
 	messages []*proto.Message,
 	msgType proto.MessageType,
 ) bool {
-	validators, err := i.forkManager.GetValidators(blockNumber)
-	if err != nil {
-		i.logger.Error(
-			"failed to get validators when calculation quorum",
-			"height", blockNumber,
-			"err", err,
-		)
-
-		return false
-	}
-
-	quorum := i.quorumSize(blockNumber)(validators)
-
 	switch msgType {
 	case proto.MessageType_PREPREPARE:
 		return len(messages) > 0
 	case proto.MessageType_PREPARE:
-		// two cases -> first message is MessageType_PREPREPARE, and other -> MessageType_PREPREPARE is not included
-		if len(messages) > 0 && messages[0].Type == proto.MessageType_PREPREPARE {
-			return len(messages) >= quorum
+		vpowers, quorum, msgPower, err := i.getQuorumData(blockNumber, messages)
+		if err != nil {
+			return false
 		}
 
-		return len(messages) >= quorum-1
+		// two cases -> first message is MessageType_PREPREPARE, and other -> MessageType_PREPREPARE is not included
+		if len(messages) > 0 && messages[0].Type == proto.MessageType_PREPREPARE {
+			return msgPower.Cmp(quorum) != -1
+		}
+
+		signerPower, err := vpowers.GetVotingPower(i.currentSigner.Address())
+		if err != nil {
+			return false
+		}
+
+		decreasedQuorum := big.NewInt(0).Sub(quorum, &signerPower)
+
+		return msgPower.Cmp(decreasedQuorum) != -1
+
 	case proto.MessageType_COMMIT, proto.MessageType_ROUND_CHANGE:
-		return len(messages) >= quorum
+		_, quorum, msgPower, err := i.getQuorumData(blockNumber, messages)
+		if err != nil {
+			return false
+		}
+
+		return msgPower.Cmp(quorum) != -1
 	default:
 		return false
 	}
@@ -441,4 +457,38 @@ func (i *backendIBFT) extractParentCommittedSeals(
 	}
 
 	return i.extractCommittedSeals(header)
+}
+
+func (i *backendIBFT) getQuorumData(blockNumber uint64, messages []*proto.Message) (validators.VotingPowers, *big.Int, *big.Int, error) {
+	zero := big.NewInt(0)
+	vals, err := i.forkManager.GetValidators(blockNumber)
+	if err != nil {
+		i.logger.Error(
+			"failed to get validators when calculation quorum",
+			"height", blockNumber,
+			"err", err,
+		)
+
+		return nil, zero, zero, err
+	}
+
+	vpowers, err := i.forkManager.GetVPowers(blockNumber)
+	if err != nil {
+		i.logger.Error(
+			"failed to get vpowers when calculation quorum",
+			"height", blockNumber,
+			"err", err,
+		)
+
+		return nil, zero, zero, err
+	}
+
+	messagesPower, err := vpowers.CalcMessagesPower(messages)
+	if err != nil {
+		return nil, zero, zero, err
+	}
+
+	quorum := i.quorumSize(blockNumber)(vals, vpowers)
+
+	return vpowers, &quorum, &messagesPower, nil
 }

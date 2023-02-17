@@ -34,6 +34,7 @@ type ValidatorStore interface {
 	Close() error
 	// GetValidators is a method to return validators at the given height
 	GetValidators(height, epochSize, forkFrom uint64) (validators.Validators, error)
+	GetVPowers(height, epochSize, forkFrom uint64) (validators.VotingPowers, error)
 }
 
 // HookRegister is an interface that ForkManager calls for hook registrations
@@ -323,4 +324,23 @@ func (m *ForkManager) initializeHooksRegister(ibftType IBFTType) {
 			m.epochSize,
 		)
 	}
+}
+
+// GetVPowers returns validators' voting powers at specified height
+func (m *ForkManager) GetVPowers(height uint64) (validators.VotingPowers, error) {
+	fork := m.forks.getFork(height)
+	if fork == nil {
+		return nil, ErrForkNotFound
+	}
+
+	set := m.getValidatorStoreByIBFTFork(fork)
+	if set == nil {
+		return nil, ErrValidatorStoreNotFound
+	}
+
+	return set.GetVPowers(
+		height,
+		m.epochSize,
+		fork.From.Value,
+	)
 }

@@ -9,10 +9,24 @@ import (
 func (i *backendIBFT) signMessage(msg *protoIBFT.Message) *protoIBFT.Message {
 	raw, err := proto.Marshal(msg)
 	if err != nil {
+		i.logger.Error(
+			"unable to sign message",
+			"can't marshal msg data",
+			"err",
+			err,
+		)
+
 		return nil
 	}
 
 	if msg.Signature, err = i.currentSigner.SignIBFTMessage(raw); err != nil {
+		i.logger.Error(
+			"unable to sign message",
+			"can't sign ibft message",
+			"err",
+			err,
+		)
+
 		return nil
 	}
 
@@ -32,6 +46,13 @@ func (i *backendIBFT) BuildPrePrepareMessage(
 	// hash calculation begins
 	proposalHash, err := i.calculateProposalHashFromBlockBytes(rawProposal, &view.Round)
 	if err != nil {
+		i.logger.Error(
+			"unable to build preprepare message",
+			"can't calculate proposal hash from block bytes",
+			"err",
+			err,
+		)
+
 		return nil
 	}
 

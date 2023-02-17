@@ -3,6 +3,7 @@ package signer
 import (
 	"crypto/ecdsa"
 	"errors"
+	"math/big"
 	"testing"
 
 	"github.com/0xPolygon/polygon-edge/crypto"
@@ -371,7 +372,8 @@ func TestECDSAKeyManagerVerifyCommittedSeals(t *testing.T) {
 		committedSeals Seals
 		digest         []byte
 		rawSet         validators.Validators
-		expectedRes    int
+		vPowers        validators.VotingPowers
+		expectedRes    *big.Int
 		expectedErr    error
 	}{
 		{
@@ -379,7 +381,7 @@ func TestECDSAKeyManagerVerifyCommittedSeals(t *testing.T) {
 			committedSeals: &AggregatedSeal{},
 			digest:         msg,
 			rawSet:         nil,
-			expectedRes:    0,
+			expectedRes:    big.NewInt(0),
 			expectedErr:    ErrInvalidCommittedSealType,
 		},
 		{
@@ -387,11 +389,11 @@ func TestECDSAKeyManagerVerifyCommittedSeals(t *testing.T) {
 			committedSeals: &SerializedSeal{},
 			digest:         msg,
 			rawSet:         validators.NewBLSValidatorSet(),
-			expectedRes:    0,
+			expectedRes:    big.NewInt(0),
 			expectedErr:    ErrInvalidValidators,
 		},
 		{
-			name: "should return size of CommittedSeals if verification is successful",
+			name: "should return voting power of CommittedSeals if verification is successful",
 			committedSeals: &SerializedSeal{
 				correctCommittedSeal,
 			},
@@ -401,7 +403,12 @@ func TestECDSAKeyManagerVerifyCommittedSeals(t *testing.T) {
 					ecdsaKeyManager1.Address(),
 				),
 			),
-			expectedRes: 1,
+			vPowers: newTestVPowersSetFromVals(validators.NewECDSAValidatorSet(
+				validators.NewECDSAValidator(
+					ecdsaKeyManager1.Address(),
+				),
+			)),
+			expectedRes: big.NewInt(15000),
 			expectedErr: nil,
 		},
 	}
@@ -416,6 +423,7 @@ func TestECDSAKeyManagerVerifyCommittedSeals(t *testing.T) {
 				test.committedSeals,
 				test.digest,
 				test.rawSet,
+				test.vPowers,
 			)
 
 			assert.Equal(t, test.expectedRes, res)
@@ -468,7 +476,8 @@ func TestECDSAKeyManager_verifyCommittedSealsImpl(t *testing.T) {
 		committedSeals *SerializedSeal
 		msg            []byte
 		validators     validators.Validators
-		expectedRes    int
+		vpowers        validators.VotingPowers
+		expectedRes    *big.Int
 		expectedErr    error
 	}{
 		{
@@ -476,7 +485,7 @@ func TestECDSAKeyManager_verifyCommittedSealsImpl(t *testing.T) {
 			committedSeals: &SerializedSeal{},
 			msg:            msg,
 			validators:     validators.NewECDSAValidatorSet(),
-			expectedRes:    0,
+			expectedRes:    big.NewInt(0),
 			expectedErr:    ErrEmptyCommittedSeals,
 		},
 		{
@@ -486,7 +495,7 @@ func TestECDSAKeyManager_verifyCommittedSealsImpl(t *testing.T) {
 			},
 			msg:         msg,
 			validators:  validators.NewECDSAValidatorSet(),
-			expectedRes: 0,
+			expectedRes: big.NewInt(0),
 			expectedErr: errors.New("invalid compact signature size"),
 		},
 		{
@@ -501,7 +510,12 @@ func TestECDSAKeyManager_verifyCommittedSealsImpl(t *testing.T) {
 					ecdsaKeyManager1.Address(),
 				),
 			),
-			expectedRes: 0,
+			vpowers: newTestVPowersSetFromVals(validators.NewECDSAValidatorSet(
+				validators.NewECDSAValidator(
+					ecdsaKeyManager1.Address(),
+				),
+			)),
+			expectedRes: big.NewInt(0),
 			expectedErr: ErrRepeatedCommittedSeal,
 		},
 		{
@@ -516,11 +530,16 @@ func TestECDSAKeyManager_verifyCommittedSealsImpl(t *testing.T) {
 					ecdsaKeyManager1.Address(),
 				),
 			),
-			expectedRes: 0,
+			vpowers: newTestVPowersSetFromVals(validators.NewECDSAValidatorSet(
+				validators.NewECDSAValidator(
+					ecdsaKeyManager1.Address(),
+				),
+			)),
+			expectedRes: big.NewInt(0),
 			expectedErr: ErrNonValidatorCommittedSeal,
 		},
 		{
-			name: "should return the size of CommittedSeals if verification is successful",
+			name: "should return error ErrVPowerNotFound if Voting Power of validator is not found",
 			committedSeals: &SerializedSeal{
 				correctCommittedSeal,
 			},
@@ -530,7 +549,27 @@ func TestECDSAKeyManager_verifyCommittedSealsImpl(t *testing.T) {
 					ecdsaKeyManager1.Address(),
 				),
 			),
-			expectedRes: 1,
+			vpowers:     validators.NewVotingPowers(),
+			expectedRes: big.NewInt(0),
+			expectedErr: validators.ErrVPowerNotFound,
+		},
+		{
+			name: "should return the voting power of CommittedSeals if verification is successful",
+			committedSeals: &SerializedSeal{
+				correctCommittedSeal,
+			},
+			msg: msg,
+			validators: validators.NewECDSAValidatorSet(
+				validators.NewECDSAValidator(
+					ecdsaKeyManager1.Address(),
+				),
+			),
+			vpowers: newTestVPowersSetFromVals(validators.NewECDSAValidatorSet(
+				validators.NewECDSAValidator(
+					ecdsaKeyManager1.Address(),
+				),
+			)),
+			expectedRes: big.NewInt(15000),
 			expectedErr: nil,
 		},
 	}
@@ -545,6 +584,7 @@ func TestECDSAKeyManager_verifyCommittedSealsImpl(t *testing.T) {
 				test.committedSeals,
 				test.msg,
 				test.validators,
+				test.vpowers,
 			)
 
 			assert.Equal(t, test.expectedRes, res)

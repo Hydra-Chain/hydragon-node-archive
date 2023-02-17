@@ -17,7 +17,7 @@ func TestFetchValidators(t *testing.T) {
 
 	// only check error handling because of the duplicated tests below
 	fakeValidatorType := validators.ValidatorType("fake")
-	res, err := FetchValidators(
+	res, _, err := FetchValidators(
 		fakeValidatorType,
 		nil,
 		types.ZeroAddress,
@@ -71,7 +71,7 @@ func TestFetchECDSAValidators(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
-			res, err := FetchValidators(
+			res, _, err := FetchValidators(
 				validators.ECDSAValidatorType,
 				test.transition,
 				test.from,
@@ -129,7 +129,7 @@ func TestFetchBLSValidators(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			t.Parallel()
 
-			res, err := FetchValidators(
+			res, _, err := FetchValidators(
 				validators.BLSValidatorType,
 				test.transition,
 				test.from,

@@ -1,6 +1,8 @@
 package signer
 
 import (
+	"math/big"
+
 	"github.com/0xPolygon/polygon-edge/types"
 	"github.com/0xPolygon/polygon-edge/validators"
 )
@@ -24,7 +26,7 @@ type KeyManager interface {
 	// GenerateCommittedSeals creates CommittedSeals from committed seals
 	GenerateCommittedSeals(sealsByValidator map[types.Address][]byte, vals validators.Validators) (Seals, error)
 	// VerifyCommittedSeals verifies CommittedSeals
-	VerifyCommittedSeals(seals Seals, hash []byte, vals validators.Validators) (int, error)
+	VerifyCommittedSeals(seals Seals, hash []byte, vals validators.Validators, vPowerGetter VPowerGetter) (*big.Int, error)
 	// SignIBFTMessage signs for arbitrary bytes message
 	SignIBFTMessage(msg []byte) ([]byte, error)
 	// Ecrecover recovers address from signature and message

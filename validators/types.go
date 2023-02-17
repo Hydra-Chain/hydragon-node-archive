@@ -2,7 +2,9 @@ package validators
 
 import (
 	"errors"
+	"math/big"
 
+	msgProto "github.com/0xPolygon/go-ibft/messages/proto"
 	"github.com/0xPolygon/polygon-edge/types"
 	"github.com/umbracle/fastrlp"
 )
@@ -13,6 +15,7 @@ var (
 	ErrMismatchValidatorsType = errors.New("mismatch between two validators")
 	ErrValidatorAlreadyExists = errors.New("validator already exists in validators")
 	ErrValidatorNotFound      = errors.New("validator not found in validators")
+	ErrVPowerNotFound         = errors.New("validator voting power not found in validators' voting powers")
 	ErrInvalidValidators      = errors.New("container is not ")
 )
 
@@ -88,4 +91,30 @@ type Validators interface {
 	MarshalRLPWith(*fastrlp.Arena) *fastrlp.Value
 	// Decode bytes in RLP encode and map to the elements
 	UnmarshalRLPFrom(*fastrlp.Parser, *fastrlp.Value) error
+}
+
+type VotingPower interface {
+	// GetValue returns the voting power of the validator.
+	GetValue() big.Int
+	// ValAddress returns the Validator's address.
+	ValAddress() types.Address
+}
+
+type VotingPowers interface {
+	// GetTVotingPower returns the voting power of all Validators
+	GetTVotingPower() big.Int
+	// GetVotingPower returns the voting power of a specific validator
+	GetVotingPower(types.Address) (big.Int, error)
+	// Add add Voting Power to the voting power set
+	Add(VotingPower) error
+	// At returns a validator's Voting Power at specified index in the collection
+	// check outside the function does the index exists
+	At(uint64) VotingPower
+	// Index returns the index of the VotingPower whose validator's address matches with the given address
+	Index(types.Address) int64
+	// Includes return the bool indicating whether the voting power of validator
+	// whose address matches with the given address exists or not
+	Includes(types.Address) bool
+	// CalcMessagesPower returns the sum of the voting power of all valid message signers (validators)
+	CalcMessagesPower(messages []*msgProto.Message) (big.Int, error)
 }
