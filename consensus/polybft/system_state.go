@@ -73,6 +73,21 @@ func (s *SystemStateImpl) GetValidatorSet() (AccountSet, error) {
 		return nil, fmt.Errorf("failed to decode addresses of the current validator set")
 	}
 
+	outputExponent, err := s.validatorContract.Call("getExponent", ethgo.Latest)
+	if err != nil {
+		return nil, err
+	}
+
+	exponentNumerator, ok := output["numerator"].(*big.Int)
+	if !ok {
+		return nil, fmt.Errorf("failed to decode voting power exponent numerator")
+	}
+
+	exponentDenominator, ok := output["denominator"].(*big.Int)
+	if !ok {
+		return nil, fmt.Errorf("failed to decode voting power exponent denominator")
+	}
+
 	queryValidator := func(addr ethgo.Address) (*ValidatorMetadata, error) {
 		output, err := s.validatorContract.Call("getValidator", ethgo.Latest, addr)
 		if err != nil {
@@ -94,6 +109,7 @@ func (s *SystemStateImpl) GetValidatorSet() (AccountSet, error) {
 			return nil, fmt.Errorf("failed to decode total stake")
 		}
 
+		vpower := new(big.Int).
 		val := &ValidatorMetadata{
 			Address:     types.Address(addr),
 			BlsKey:      pubKey,
@@ -169,4 +185,21 @@ func buildLogsFromReceipts(entry []*types.Receipt, header *types.Header) []*type
 	}
 
 	return logs
+}
+
+func calculateVPower(stakedBalance *big.Int, exponent *big.Float) *big.Int {
+	// Convert stakedBalance to big.Float
+	stakedFloat := new(big.Float).SetInt(stakedBalance)
+
+	// Calculate voting power with exponent
+	votingPowerFloat := new(big.Float).Pow(stakedFloat, exponent)
+
+	// Convert votingPowerFloat to big.Int
+	votingPower := new(big.Int)
+	votingPowerFloat.Int(votingPower)
+
+	// Divide by 10^18 to get final voting power
+	votingPower.Div(votingPower, big.NewInt(1e18))
+
+	return votingPower
 }
