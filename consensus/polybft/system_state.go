@@ -78,12 +78,12 @@ func (s *SystemStateImpl) GetValidatorSet() (AccountSet, error) {
 		return nil, err
 	}
 
-	exponentNumerator, ok := output["numerator"].(*big.Int)
+	expNumerator, ok := outputExponent["numerator"].(*big.Int)
 	if !ok {
 		return nil, fmt.Errorf("failed to decode voting power exponent numerator")
 	}
 
-	exponentDenominator, ok := output["denominator"].(*big.Int)
+	expDenominator, ok := outputExponent["denominator"].(*big.Int)
 	if !ok {
 		return nil, fmt.Errorf("failed to decode voting power exponent denominator")
 	}
@@ -109,12 +109,15 @@ func (s *SystemStateImpl) GetValidatorSet() (AccountSet, error) {
 			return nil, fmt.Errorf("failed to decode total stake")
 		}
 
-		vpower := new(big.Int).
+		vpower := CalculateVPower(totalStake, expNumerator, expDenominator)
+
 		val := &ValidatorMetadata{
 			Address:     types.Address(addr),
 			BlsKey:      pubKey,
-			VotingPower: new(big.Int).Set(totalStake),
+			VotingPower: vpower,
 		}
+
+		fmt.Println("Validator fetched", "address", addr, "voting power is", vpower)
 
 		return val, nil
 	}
@@ -185,21 +188,4 @@ func buildLogsFromReceipts(entry []*types.Receipt, header *types.Header) []*type
 	}
 
 	return logs
-}
-
-func calculateVPower(stakedBalance *big.Int, exponent *big.Float) *big.Int {
-	// Convert stakedBalance to big.Float
-	stakedFloat := new(big.Float).SetInt(stakedBalance)
-
-	// Calculate voting power with exponent
-	votingPowerFloat := new(big.Float).Pow(stakedFloat, exponent)
-
-	// Convert votingPowerFloat to big.Int
-	votingPower := new(big.Int)
-	votingPowerFloat.Int(votingPower)
-
-	// Divide by 10^18 to get final voting power
-	votingPower.Div(votingPower, big.NewInt(1e18))
-
-	return votingPower
 }
