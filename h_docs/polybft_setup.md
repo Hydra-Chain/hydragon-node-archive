@@ -39,11 +39,11 @@ npx hardhat compile
 4. Generate genesis file
 
 ```
-polygon-edge genesis --consensus polybft --ibft-validators-prefix-path test-chain- --bootnode /ip4/127.0.0.1/tcp/10001/p2p/<node_id> --bootnode /ip4/127.0.0.1/tcp/20001/p2p/<node2_id>
+polygon-edge genesis --consensus polybft --ibft-validators-prefix-path test-chain-
 ```
 
 5. Run the chain
 
 ```
-
+polygon-edge server --data-dir ./test-chain-1 --chain genesis.json --grpc-address :10000 --libp2p :10001 --jsonrpc :10002 --seal --log-level=DEBUG
 ```

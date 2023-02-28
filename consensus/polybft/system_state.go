@@ -73,20 +73,24 @@ func (s *SystemStateImpl) GetValidatorSet() (AccountSet, error) {
 		return nil, fmt.Errorf("failed to decode addresses of the current validator set")
 	}
 
-	outputExponent, err := s.validatorContract.Call("getExponent", ethgo.Latest)
+	outputsExponent, err := s.validatorContract.Call("getExponent", ethgo.Latest)
 	if err != nil {
 		return nil, err
 	}
 
-	expNumerator, ok := outputExponent["numerator"].(*big.Int)
+	expNumerator, ok := outputsExponent["numerator"].(*big.Int)
 	if !ok {
 		return nil, fmt.Errorf("failed to decode voting power exponent numerator")
 	}
 
-	expDenominator, ok := outputExponent["denominator"].(*big.Int)
+	fmt.Println("Voting Power Exponent Numerator is: ", expNumerator)
+
+	expDenominator, ok := outputsExponent["denominator"].(*big.Int)
 	if !ok {
 		return nil, fmt.Errorf("failed to decode voting power exponent denominator")
 	}
+
+	fmt.Println("Voting Power Exponent Denominator is: ", expDenominator)
 
 	queryValidator := func(addr ethgo.Address) (*ValidatorMetadata, error) {
 		output, err := s.validatorContract.Call("getValidator", ethgo.Latest, addr)

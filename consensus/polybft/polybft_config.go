@@ -133,7 +133,7 @@ func (v *Validator) ToValidatorMetadata(expNum *big.Int, expDen *big.Int) (*Vali
 	}
 
 	vpower := CalculateVPower(v.Balance, expNum, expDen)
-	fmt.Println("Validator metadata set", "address", v.Address, "voting power is", vpower)
+	fmt.Println("Validator metadata set", "address", v.Address, "balance is", v.Balance, "voting power is", vpower)
 
 	metadata := &ValidatorMetadata{
 		Address:     v.Address,
