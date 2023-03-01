@@ -3,7 +3,6 @@ package polybft
 import (
 	"math/big"
 
-	"github.com/0xPolygon/polygon-edge/helper/common"
 	"github.com/0xPolygon/polygon-edge/types"
 	"github.com/hashicorp/go-hclog"
 )
@@ -104,9 +103,16 @@ func (vs validatorSet) Len() int {
 }
 
 // getQuorumSize calculates quorum size as 2/3 super-majority of provided total voting power
+// H_MODIFY: Qourum size is 614/1000 = 61.4% of total voting power
 func getQuorumSize(totalVotingPower *big.Int) *big.Int {
-	quorum := new(big.Int)
-	quorum.Mul(totalVotingPower, big.NewInt(614))
 
-	return common.BigIntDivCeil(quorum, big.NewInt(1000))
+	quorum := new(big.Int)
+	// In case for some reason voting power goes below too small value, we set quorum to total voting power
+	if totalVotingPower.Cmp(big.NewInt(10)) == -1 {
+		quorum = quorum.Add(quorum, totalVotingPower)
+	} else {
+		quorum = quorum.Mul(totalVotingPower, big.NewInt(614)).Div(quorum, big.NewInt(1000)).Add(quorum, big.NewInt(1))
+	}
+
+	return quorum
 }
