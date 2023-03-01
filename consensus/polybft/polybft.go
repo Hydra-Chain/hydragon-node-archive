@@ -284,7 +284,6 @@ func (p *Polybft) startConsensusProtocol() {
 	// if !p.waitForNPeers() {
 	// 	return
 	// }
-
 	newBlockSub := p.blockchain.SubscribeEvents()
 	defer newBlockSub.Close()
 

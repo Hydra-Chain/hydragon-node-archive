@@ -62,8 +62,8 @@ func NewValidatorSet(valz AccountSet, logger hclog.Logger) *validatorSet {
 // based on its voting power and quorum size
 func (vs validatorSet) HasQuorum(signers map[types.Address]struct{}) bool {
 	aggregateVotingPower := big.NewInt(0)
-
 	valsCount := 0
+
 	for address := range signers {
 		if votingPower := vs.votingPowerMap[address]; votingPower != nil {
 			_ = aggregateVotingPower.Add(aggregateVotingPower, votingPower)
@@ -74,12 +74,11 @@ func (vs validatorSet) HasQuorum(signers map[types.Address]struct{}) bool {
 
 	hasQuorum := false
 	quorumSize := vs.quorumSize
-	if valsCount > 3 {
-		hasQuorum = aggregateVotingPower.Cmp(vs.quorumSize) >= 0
-	} else {
-		hasQuorum = aggregateVotingPower.Cmp(vs.totalVotingPower) >= 0
+	if valsCount < 4 {
 		quorumSize = vs.totalVotingPower
 	}
+
+	hasQuorum = aggregateVotingPower.Cmp(quorumSize) >= 0
 
 	vs.logger.Debug("HasQuorum",
 		"signers", len(signers),
@@ -105,7 +104,6 @@ func (vs validatorSet) Len() int {
 // getQuorumSize calculates quorum size as 2/3 super-majority of provided total voting power
 // H_MODIFY: Qourum size is 614/1000 = 61.4% of total voting power
 func getQuorumSize(totalVotingPower *big.Int) *big.Int {
-
 	quorum := new(big.Int)
 	// In case for some reason voting power goes below too small value, we set quorum to total voting power
 	if totalVotingPower.Cmp(big.NewInt(10)) == -1 {

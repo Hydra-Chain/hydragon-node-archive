@@ -34,6 +34,7 @@ func TestValidatorMetadata_CalculateVPower(t *testing.T) {
 		if !ok {
 			panic("failed to create big.Int")
 		}
+
 		return res
 	}
 
