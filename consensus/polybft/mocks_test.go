@@ -294,7 +294,7 @@ func newTestValidatorsWithAliases(aliases []string, votingPowers ...[]uint64) *t
 	validators := map[string]*testValidator{}
 
 	for i, alias := range aliases {
-		votingPower := uint64(1)
+		votingPower := uint64(15000)
 		if len(votingPowers) == 1 {
 			votingPower = votingPowers[0][i]
 		}
