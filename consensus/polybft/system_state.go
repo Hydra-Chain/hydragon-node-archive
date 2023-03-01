@@ -73,6 +73,25 @@ func (s *SystemStateImpl) GetValidatorSet() (AccountSet, error) {
 		return nil, fmt.Errorf("failed to decode addresses of the current validator set")
 	}
 
+	outputsExponent, err := s.validatorContract.Call("getExponent", ethgo.Latest)
+	if err != nil {
+		return nil, err
+	}
+
+	expNumerator, ok := outputsExponent["numerator"].(*big.Int)
+	if !ok {
+		return nil, fmt.Errorf("failed to decode voting power exponent numerator")
+	}
+
+	fmt.Println("Voting Power Exponent Numerator is: ", expNumerator)
+
+	expDenominator, ok := outputsExponent["denominator"].(*big.Int)
+	if !ok {
+		return nil, fmt.Errorf("failed to decode voting power exponent denominator")
+	}
+
+	fmt.Println("Voting Power Exponent Denominator is: ", expDenominator)
+
 	queryValidator := func(addr ethgo.Address) (*ValidatorMetadata, error) {
 		output, err := s.validatorContract.Call("getValidator", ethgo.Latest, addr)
 		if err != nil {
@@ -89,11 +108,17 @@ func (s *SystemStateImpl) GetValidatorSet() (AccountSet, error) {
 			return nil, fmt.Errorf("failed to decode total stake")
 		}
 
-		return &ValidatorMetadata{
+		vpower := CalculateVPower(totalStake, expNumerator, expDenominator)
+
+		val := &ValidatorMetadata{
 			Address:     types.Address(addr),
 			BlsKey:      pubKey,
-			VotingPower: new(big.Int).Set(totalStake),
-		}, nil
+			VotingPower: vpower,
+		}
+
+		fmt.Println("Validator fetched", "address", addr, "voting power is", vpower)
+
+		return val, nil
 	}
 
 	for _, index := range addresses {
