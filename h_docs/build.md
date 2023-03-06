@@ -1,6 +1,6 @@
 # Build procedure
 
-Information about building and using the applciation
+Information about building and using the application
 
 ## Build production version for:
 
