@@ -94,6 +94,8 @@ func (s *stakeManager) PostEpoch(req *PostEpochRequest) error {
 	})
 }
 
+// @audit this function checks the changes in the validator set and the changes are saved in the db. I suppose the validator set is now fetched from the DB and not from the contract.
+
 // PostBlock is called on every insert of finalized block (either from consensus or syncer)
 // It will read any transfer event that happened in block and update full validator set in db
 func (s *stakeManager) PostBlock(req *PostBlockRequest) error {
@@ -353,6 +355,7 @@ func newValidatorStakeMap(validatorSet AccountSet) validatorStakeMap {
 	return stakeMap
 }
 
+// @audit voting power is set here, apply our exponent
 // setStake sets given amount of stake to a validator defined by address
 func (sc *validatorStakeMap) setStake(address types.Address, amount *big.Int) {
 	isActive := amount.Cmp(bigZero) > 0
@@ -369,6 +372,7 @@ func (sc *validatorStakeMap) setStake(address types.Address, amount *big.Int) {
 	}
 }
 
+// @note getActiveValidators is moved in the node. In 0.7.0 version of the contracts it is handled in the contract
 // getActiveValidators returns all validators (*ValidatorMetadata) in sorted order
 func (sc validatorStakeMap) getActiveValidators(maxValidatorSetSize int) AccountSet {
 	activeValidators := make(AccountSet, 0, len(sc))

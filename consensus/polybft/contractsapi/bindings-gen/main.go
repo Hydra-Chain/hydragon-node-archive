@@ -36,6 +36,16 @@ func main() {
 		events              []string
 	}{
 		{
+			"ChildValidatorSet",
+			gensc.ChildValidatorSet,
+			false,
+			[]string{
+				"commitEpoch",
+				"initialize",
+			},
+			[]string{},
+		},
+		{
 			"StateReceiver",
 			gensc.StateReceiver,
 			false,
@@ -68,17 +78,18 @@ func main() {
 				"L2StateSynced",
 			},
 		},
-		{
-			"CheckpointManager",
-			gensc.CheckpointManager,
-			false,
-			[]string{
-				"submit",
-				"initialize",
-				"getCheckpointBlock",
-			},
-			[]string{},
-		},
+		// H_MODIFY: unused contracts
+		// {
+		// 	"CheckpointManager",
+		// 	gensc.CheckpointManager,
+		// 	false,
+		// 	[]string{
+		// 		"submit",
+		// 		"initialize",
+		// 		"getCheckpointBlock",
+		// 	},
+		// 	[]string{},
+		// },
 		{
 			"ExitHelper",
 			gensc.ExitHelper,
@@ -89,224 +100,225 @@ func main() {
 			},
 			[]string{},
 		},
-		{
-			"ChildERC20Predicate",
-			gensc.ChildERC20Predicate,
-			false,
-			[]string{
-				"initialize",
-				"withdrawTo",
-			},
-			[]string{},
-		},
-		{
-			"ChildERC20PredicateAccessList",
-			gensc.ChildERC20PredicateAccessList,
-			false,
-			[]string{
-				"initialize",
-				"withdrawTo",
-			},
-			[]string{},
-		},
-		{
-			"NativeERC20",
-			gensc.NativeERC20,
-			false,
-			[]string{
-				"initialize",
-			},
-			[]string{},
-		},
-		{
-			"NativeERC20Mintable",
-			gensc.NativeERC20Mintable,
-			false,
-			[]string{
-				"initialize",
-			},
-			[]string{},
-		},
-		{
-			"RootERC20Predicate",
-			gensc.RootERC20Predicate,
-			false,
-			[]string{
-				"initialize",
-				"depositTo",
-			},
-			[]string{},
-		},
-		{
-			"RootERC20",
-			gensc.RootERC20,
-			false,
-			[]string{
-				"balanceOf",
-				"approve",
-				"mint",
-			},
-			[]string{},
-		},
-		{
-			"RootERC1155Predicate",
-			gensc.RootERC1155Predicate,
-			false,
-			[]string{
-				"initialize",
-				"depositBatch",
-			},
-			[]string{},
-		},
-		{
-			"RootERC1155",
-			gensc.RootERC1155,
-			false,
-			[]string{
-				"setApprovalForAll",
-				"mintBatch",
-				"balanceOf",
-			},
-			[]string{},
-		},
-		{
-			"ChildERC1155Predicate",
-			gensc.ChildERC1155Predicate,
-			false,
-			[]string{
-				"initialize",
-				"withdrawBatch",
-			},
-			[]string{},
-		},
-		{
-			"ChildERC1155PredicateAccessList",
-			gensc.ChildERC1155PredicateAccessList,
-			false,
-			[]string{
-				"initialize",
-				"withdrawBatch",
-			},
-			[]string{},
-		},
-		{
-			"ChildERC1155",
-			gensc.ChildERC1155,
-			false,
-			[]string{
-				"initialize",
-				"balanceOf",
-			},
-			[]string{},
-		},
-		{
-			"RootERC721Predicate",
-			gensc.RootERC721Predicate,
-			false,
-			[]string{
-				"initialize",
-				"depositBatch",
-			},
-			[]string{},
-		},
-		{
-			"RootERC721",
-			gensc.RootERC721,
-			false,
-			[]string{
-				"setApprovalForAll",
-				"mint",
-			},
-			[]string{},
-		},
-		{
-			"ChildERC721Predicate",
-			gensc.ChildERC721Predicate,
-			false,
-			[]string{
-				"initialize",
-				"withdrawBatch",
-			},
-			[]string{},
-		},
-		{
-			"ChildERC721PredicateAccessList",
-			gensc.ChildERC721PredicateAccessList,
-			false,
-			[]string{
-				"initialize",
-				"withdrawBatch",
-			},
-			[]string{},
-		},
-		{
-			"ChildERC721",
-			gensc.ChildERC721,
-			false,
-			[]string{
-				"initialize",
-				"ownerOf",
-			},
-			[]string{},
-		},
-		{
-			"CustomSupernetManager",
-			gensc.CustomSupernetManager,
-			false,
-			[]string{
-				"initialize",
-				"whitelistValidators",
-				"register",
-				"getValidator",
-			},
-			[]string{
-				"ValidatorRegistered",
-				"AddedToWhitelist",
-			},
-		},
-		{
-			"StakeManager",
-			gensc.StakeManager,
-			false,
-			[]string{
-				"initialize",
-				"registerChildChain",
-				"stakeFor",
-				"releaseStakeOf",
-				"withdrawStake",
-				"stakeOf",
-			},
-			[]string{
-				"ChildManagerRegistered",
-				"StakeAdded",
-				"StakeWithdrawn",
-			},
-		},
-		{
-			"ValidatorSet",
-			gensc.ValidatorSet,
-			false,
-			[]string{
-				"commitEpoch",
-				"unstake",
-				"initialize",
-			},
-			[]string{
-				"Transfer",
-				"WithdrawalRegistered",
-				"Withdrawal",
-			},
-		},
-		{
-			"RewardPool",
-			gensc.RewardPool,
-			false,
-			[]string{
-				"initialize",
-				"distributeRewardFor",
-			},
-			[]string{},
-		},
+		// H_MODIFY: unused contracts
+		// {
+		// 	"ChildERC20Predicate",
+		// 	gensc.ChildERC20Predicate,
+		// 	false,
+		// 	[]string{
+		// 		"initialize",
+		// 		"withdrawTo",
+		// 	},
+		// 	[]string{},
+		// },
+		// {
+		// 	"ChildERC20PredicateAccessList",
+		// 	gensc.ChildERC20PredicateAccessList,
+		// 	false,
+		// 	[]string{
+		// 		"initialize",
+		// 		"withdrawTo",
+		// 	},
+		// 	[]string{},
+		// },
+		// {
+		// 	"NativeERC20",
+		// 	gensc.NativeERC20,
+		// 	false,
+		// 	[]string{
+		// 		"initialize",
+		// 	},
+		// 	[]string{},
+		// },
+		// {
+		// 	"NativeERC20Mintable",
+		// 	gensc.NativeERC20Mintable,
+		// 	false,
+		// 	[]string{
+		// 		"initialize",
+		// 	},
+		// 	[]string{},
+		// },
+		// {
+		// 	"RootERC20Predicate",
+		// 	gensc.RootERC20Predicate,
+		// 	false,
+		// 	[]string{
+		// 		"initialize",
+		// 		"depositTo",
+		// 	},
+		// 	[]string{},
+		// },
+		// {
+		// 	"RootERC20",
+		// 	gensc.RootERC20,
+		// 	false,
+		// 	[]string{
+		// 		"balanceOf",
+		// 		"approve",
+		// 		"mint",
+		// 	},
+		// 	[]string{},
+		// },
+		// {
+		// 	"RootERC1155Predicate",
+		// 	gensc.RootERC1155Predicate,
+		// 	false,
+		// 	[]string{
+		// 		"initialize",
+		// 		"depositBatch",
+		// 	},
+		// 	[]string{},
+		// },
+		// {
+		// 	"RootERC1155",
+		// 	gensc.RootERC1155,
+		// 	false,
+		// 	[]string{
+		// 		"setApprovalForAll",
+		// 		"mintBatch",
+		// 		"balanceOf",
+		// 	},
+		// 	[]string{},
+		// },
+		// {
+		// 	"ChildERC1155Predicate",
+		// 	gensc.ChildERC1155Predicate,
+		// 	false,
+		// 	[]string{
+		// 		"initialize",
+		// 		"withdrawBatch",
+		// 	},
+		// 	[]string{},
+		// },
+		// {
+		// 	"ChildERC1155PredicateAccessList",
+		// 	gensc.ChildERC1155PredicateAccessList,
+		// 	false,
+		// 	[]string{
+		// 		"initialize",
+		// 		"withdrawBatch",
+		// 	},
+		// 	[]string{},
+		// },
+		// {
+		// 	"ChildERC1155",
+		// 	gensc.ChildERC1155,
+		// 	false,
+		// 	[]string{
+		// 		"initialize",
+		// 		"balanceOf",
+		// 	},
+		// 	[]string{},
+		// },
+		// {
+		// 	"RootERC721Predicate",
+		// 	gensc.RootERC721Predicate,
+		// 	false,
+		// 	[]string{
+		// 		"initialize",
+		// 		"depositBatch",
+		// 	},
+		// 	[]string{},
+		// },
+		// {
+		// 	"RootERC721",
+		// 	gensc.RootERC721,
+		// 	false,
+		// 	[]string{
+		// 		"setApprovalForAll",
+		// 		"mint",
+		// 	},
+		// 	[]string{},
+		// },
+		// {
+		// 	"ChildERC721Predicate",
+		// 	gensc.ChildERC721Predicate,
+		// 	false,
+		// 	[]string{
+		// 		"initialize",
+		// 		"withdrawBatch",
+		// 	},
+		// 	[]string{},
+		// },
+		// {
+		// 	"ChildERC721PredicateAccessList",
+		// 	gensc.ChildERC721PredicateAccessList,
+		// 	false,
+		// 	[]string{
+		// 		"initialize",
+		// 		"withdrawBatch",
+		// 	},
+		// 	[]string{},
+		// },
+		// {
+		// 	"ChildERC721",
+		// 	gensc.ChildERC721,
+		// 	false,
+		// 	[]string{
+		// 		"initialize",
+		// 		"ownerOf",
+		// 	},
+		// 	[]string{},
+		// },
+		// {
+		// 	"CustomSupernetManager",
+		// 	gensc.CustomSupernetManager,
+		// 	false,
+		// 	[]string{
+		// 		"initialize",
+		// 		"whitelistValidators",
+		// 		"register",
+		// 		"getValidator",
+		// 	},
+		// 	[]string{
+		// 		"ValidatorRegistered",
+		// 		"AddedToWhitelist",
+		// 	},
+		// },
+		// {
+		// 	"StakeManager",
+		// 	gensc.StakeManager,
+		// 	false,
+		// 	[]string{
+		// 		"initialize",
+		// 		"registerChildChain",
+		// 		"stakeFor",
+		// 		"releaseStakeOf",
+		// 		"withdrawStake",
+		// 		"stakeOf",
+		// 	},
+		// 	[]string{
+		// 		"ChildManagerRegistered",
+		// 		"StakeAdded",
+		// 		"StakeWithdrawn",
+		// 	},
+		// },
+		// {
+		// 	"ValidatorSet",
+		// 	gensc.ValidatorSet,
+		// 	false,
+		// 	[]string{
+		// 		"commitEpoch",
+		// 		"unstake",
+		// 		"initialize",
+		// 	},
+		// 	[]string{
+		// 		"Transfer",
+		// 		"WithdrawalRegistered",
+		// 		"Withdrawal",
+		// 	},
+		// },
+		// {
+		// 	"RewardPool",
+		// 	gensc.RewardPool,
+		// 	false,
+		// 	[]string{
+		// 		"initialize",
+		// 		"distributeRewardFor",
+		// 	},
+		// 	[]string{},
+		// },
 	}
 
 	generatedData := &generatedData{}

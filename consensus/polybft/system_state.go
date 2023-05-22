@@ -11,6 +11,8 @@ import (
 	"github.com/umbracle/ethgo/contract"
 )
 
+// @audit system state abstract smart contracts function, so it is the main point we have to update
+
 // ValidatorInfo is data transfer object which holds validator information,
 // provided by smart contract
 type ValidatorInfo struct {
@@ -41,11 +43,13 @@ type SystemStateImpl struct {
 
 // NewSystemState initializes new instance of systemState which abstracts smart contracts functions
 func NewSystemState(valSetAddr types.Address, stateRcvAddr types.Address, provider contract.Provider) *SystemStateImpl {
+	// @audit uuse childValidatorSet contract instead of validatorSet contract
 	s := &SystemStateImpl{}
 	s.validatorContract = contract.NewContract(
 		ethgo.Address(valSetAddr),
 		contractsapi.ValidatorSet.Abi, contract.WithProvider(provider),
 	)
+	// @todo check what is the purpose of the sidechainBridgeContract/StateReceiver contract
 	s.sidechainBridgeContract = contract.NewContract(
 		ethgo.Address(stateRcvAddr),
 		contractsapi.StateReceiver.Abi,
@@ -160,6 +164,7 @@ func (s *SystemStateImpl) GetEpoch() (uint64, error) {
 	return epochNumber.Uint64(), nil
 }
 
+// @audit potentialy remove this function
 // GetNextCommittedIndex retrieves next committed bridge state sync index
 func (s *SystemStateImpl) GetNextCommittedIndex() (uint64, error) {
 	rawResult, err := s.sidechainBridgeContract.Call("lastCommittedId", ethgo.Latest)

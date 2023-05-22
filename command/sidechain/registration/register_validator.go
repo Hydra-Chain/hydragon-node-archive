@@ -11,10 +11,16 @@ import (
 	"github.com/0xPolygon/polygon-edge/consensus/polybft/contractsapi"
 	bls "github.com/0xPolygon/polygon-edge/consensus/polybft/signer"
 	"github.com/0xPolygon/polygon-edge/consensus/polybft/wallet"
+	"github.com/0xPolygon/polygon-edge/contracts"
 	"github.com/0xPolygon/polygon-edge/txrelayer"
 	"github.com/0xPolygon/polygon-edge/types"
 	"github.com/spf13/cobra"
 	"github.com/umbracle/ethgo"
+)
+
+var (
+	stakeManager = contracts.ValidatorSetContract
+	stakeFn      = contractsapi.ChildValidatorSet.Abi.Methods["stake"]
 )
 
 var params registerParams
@@ -54,6 +60,13 @@ func setFlags(cmd *cobra.Command) {
 		"stake represents amount which is going to be staked by the new validator account",
 	)
 
+	cmd.Flags().Int64Var(
+		&params.chainID,
+		chainIDFlag,
+		command.DefaultChainID,
+		"the ID of the chain",
+	)
+
 	helper.RegisterJSONRPCFlag(cmd)
 	cmd.MarkFlagsMutuallyExclusive(polybftsecrets.AccountConfigFlag, polybftsecrets.AccountDirFlag)
 }
@@ -88,6 +101,8 @@ func runCommand(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
+	secretsManager.GetSecret()
+
 	koskSignature, err := bls.MakeKOSKSignature(
 		newValidatorAccount.Bls, newValidatorAccount.Address(),
 		rootChainID.Int64(), bls.DomainValidatorSet, types.StringToAddress(params.supernetManagerAddress))
@@ -95,7 +110,17 @@ func runCommand(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	receipt, err := registerValidator(txRelayer, newValidatorAccount, koskSignature)
+	sb, err := hex.DecodeString(string(sRaw))
+	if err != nil {
+		return err
+	}
+
+	blsSignature, err := bls.UnmarshalSignature(sb)
+	if err != nil {
+		return err
+	}
+
+	receipt, err := registerValidator(txRelayer, newValidatorAccount, blsSignature)
 	if err != nil {
 		return err
 	}
@@ -107,25 +132,20 @@ func runCommand(cmd *cobra.Command, _ []string) error {
 	result := &registerResult{}
 	foundLog := false
 
-	var validatorRegisteredEvent contractsapi.ValidatorRegisteredEvent
+	var newValidatorEvent contractsapi.NewValidatorEvent
 	for _, log := range receipt.Logs {
-		doesMatch, err := validatorRegisteredEvent.ParseLog(log)
-		if err != nil {
-			return err
-		}
-
+		doesMatch, err := newValidatorEvent.ParseLog(log)
 		if !doesMatch {
 			continue
 		}
 
-		koskSignatureRaw, err := koskSignature.Marshal()
 		if err != nil {
 			return err
 		}
 
-		result.koskSignature = hex.EncodeToString(koskSignatureRaw)
-		result.validatorAddress = validatorRegisteredEvent.Validator.String()
-
+		result.validatorAddress = newValidatorEvent.Validator.String()
+		result.stakeResult = "No stake parameters have been submitted"
+		result.amount = 0
 		foundLog = true
 
 		break
@@ -135,9 +155,72 @@ func runCommand(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("could not find an appropriate log in receipt that registration happened")
 	}
 
+	if params.stake != "" {
+		receipt, err = stake(txRelayer, newValidatorAccount)
+		if err != nil {
+			result.stakeResult = fmt.Sprintf("Failed to execute stake transaction: %s", err.Error())
+		} else {
+			populateStakeResults(receipt, result)
+		}
+	}
+
 	outputter.WriteCommandResult(result)
 
 	return nil
+}
+
+func stake(sender txrelayer.TxRelayer, account *wallet.Account) (*ethgo.Receipt, error) {
+	if stakeFn == nil {
+		return nil, errors.New("failed to create stake ABI function")
+	}
+
+	input, err := stakeFn.Encode([]interface{}{})
+	if err != nil {
+		return nil, err
+	}
+
+	stake, err := types.ParseUint256orHex(&params.stake)
+	if err != nil {
+		return nil, err
+	}
+
+	txn := &ethgo.Transaction{
+		Input: input,
+		To:    (*ethgo.Address)(&stakeManager),
+		Value: stake,
+	}
+
+	return sender.SendTransaction(txn, account.Ecdsa)
+}
+
+func populateStakeResults(receipt *ethgo.Receipt, result *registerResult) {
+	if receipt.Status != uint64(types.ReceiptSuccess) {
+		result.stakeResult = "Stake transaction failed"
+
+		return
+	}
+
+	// check the logs to verify stake
+	var stakedEvent contractsapi.StakedEvent
+	for _, log := range receipt.Logs {
+		doesMatch, err := stakedEvent.ParseLog(log)
+		if !doesMatch {
+			continue
+		}
+
+		if err != nil {
+			result.stakeResult = "Failed to parse stake log"
+
+			return
+		}
+
+		result.amount = stakedEvent.Amount.Uint64()
+		result.stakeResult = "Stake succeeded"
+
+		return
+	}
+
+	result.stakeResult = "Could not find an appropriate log in receipt that stake happened"
 }
 
 func registerValidator(sender txrelayer.TxRelayer, account *wallet.Account,
@@ -147,7 +230,7 @@ func registerValidator(sender txrelayer.TxRelayer, account *wallet.Account,
 		return nil, fmt.Errorf("register validator failed: %w", err)
 	}
 
-	registerFn := &contractsapi.RegisterCustomSupernetManagerFn{
+	registerFn := &contractsapi.RegisterChildValidatorSetFn{
 		Signature: sigMarshal,
 		Pubkey:    account.Bls.PublicKey().ToBigInt(),
 	}
@@ -157,10 +240,9 @@ func registerValidator(sender txrelayer.TxRelayer, account *wallet.Account,
 		return nil, fmt.Errorf("register validator failed: %w", err)
 	}
 
-	supernetAddr := ethgo.Address(types.StringToAddress(params.supernetManagerAddress))
 	txn := &ethgo.Transaction{
 		Input: input,
-		To:    &supernetAddr,
+		To:    (*ethgo.Address)(&stakeManager),
 	}
 
 	return sender.SendTransaction(txn, account.Ecdsa)
