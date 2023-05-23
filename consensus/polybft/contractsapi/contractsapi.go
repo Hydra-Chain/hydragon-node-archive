@@ -127,6 +127,65 @@ func (i *InitializeChildValidatorSetFn) DecodeAbi(buf []byte) error {
 	return decodeMethod(ChildValidatorSet.Abi.Methods["initialize"], buf, i)
 }
 
+type RegisterChildValidatorSetFn struct {
+	Signature [2]*big.Int `abi:"signature"`
+	Pubkey    [4]*big.Int `abi:"pubkey"`
+}
+
+func (r *RegisterChildValidatorSetFn) Sig() []byte {
+	return ChildValidatorSet.Abi.Methods["register"].ID()
+}
+
+func (r *RegisterChildValidatorSetFn) EncodeAbi() ([]byte, error) {
+	return ChildValidatorSet.Abi.Methods["register"].Encode(r)
+}
+
+func (r *RegisterChildValidatorSetFn) DecodeAbi(buf []byte) error {
+	return decodeMethod(ChildValidatorSet.Abi.Methods["register"], buf, r)
+}
+
+type NewValidatorEvent struct {
+	Validator types.Address `abi:"validator"`
+	BlsKey    [4]*big.Int   `abi:"blsKey"`
+}
+
+func (*NewValidatorEvent) Sig() ethgo.Hash {
+	return ChildValidatorSet.Abi.Events["NewValidator"].ID()
+}
+
+func (*NewValidatorEvent) Encode(inputs interface{}) ([]byte, error) {
+	return ChildValidatorSet.Abi.Events["NewValidator"].Inputs.Encode(inputs)
+}
+
+func (n *NewValidatorEvent) ParseLog(log *ethgo.Log) (bool, error) {
+	if !ChildValidatorSet.Abi.Events["NewValidator"].Match(log) {
+		return false, nil
+	}
+
+	return true, decodeEvent(ChildValidatorSet.Abi.Events["NewValidator"], log, n)
+}
+
+type StakedEvent struct {
+	Validator types.Address `abi:"validator"`
+	Amount    *big.Int      `abi:"amount"`
+}
+
+func (*StakedEvent) Sig() ethgo.Hash {
+	return ChildValidatorSet.Abi.Events["Staked"].ID()
+}
+
+func (*StakedEvent) Encode(inputs interface{}) ([]byte, error) {
+	return ChildValidatorSet.Abi.Events["Staked"].Inputs.Encode(inputs)
+}
+
+func (s *StakedEvent) ParseLog(log *ethgo.Log) (bool, error) {
+	if !ChildValidatorSet.Abi.Events["Staked"].Match(log) {
+		return false, nil
+	}
+
+	return true, decodeEvent(ChildValidatorSet.Abi.Events["Staked"], log, s)
+}
+
 type StateSyncCommitment struct {
 	StartID *big.Int   `abi:"startId"`
 	EndID   *big.Int   `abi:"endId"`

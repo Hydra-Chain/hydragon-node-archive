@@ -27,6 +27,9 @@ type generatedData struct {
 	structs      []string
 }
 
+// TODO: H: Rebase our contracts to the latest core-contracts version and generate contractsapi again, so we can keep
+// the types needed for the functions that we don't use
+
 func main() {
 	cases := []struct {
 		contractName        string
@@ -43,7 +46,15 @@ func main() {
 				"commitEpoch",
 				"initialize",
 			},
-			[]string{},
+			[]string{
+				"NewValidator",
+				"Staked",
+				"Delegated",
+				"Unstaked",
+				"Undelegated",
+				"AddedToWhitelist",
+				"Withdrawal",
+			},
 		},
 		{
 			"StateReceiver",

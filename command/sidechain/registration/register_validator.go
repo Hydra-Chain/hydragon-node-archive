@@ -1,7 +1,6 @@
 package registration
 
 import (
-	"encoding/hex"
 	"errors"
 	"fmt"
 
@@ -101,26 +100,14 @@ func runCommand(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	secretsManager.GetSecret()
-
 	koskSignature, err := bls.MakeKOSKSignature(
 		newValidatorAccount.Bls, newValidatorAccount.Address(),
-		rootChainID.Int64(), bls.DomainValidatorSet, types.StringToAddress(params.supernetManagerAddress))
+		rootChainID.Int64(), bls.DomainValidatorSet)
 	if err != nil {
 		return err
 	}
 
-	sb, err := hex.DecodeString(string(sRaw))
-	if err != nil {
-		return err
-	}
-
-	blsSignature, err := bls.UnmarshalSignature(sb)
-	if err != nil {
-		return err
-	}
-
-	receipt, err := registerValidator(txRelayer, newValidatorAccount, blsSignature)
+	receipt, err := registerValidator(txRelayer, newValidatorAccount, koskSignature)
 	if err != nil {
 		return err
 	}

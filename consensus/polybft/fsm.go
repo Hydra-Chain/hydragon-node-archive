@@ -129,14 +129,15 @@ func (f *fsm) BuildProposal(currentRound uint64) ([]byte, error) {
 			return nil, fmt.Errorf("failed to apply commit epoch transaction: %w", err)
 		}
 
-		tx, err = f.createDistributeRewardsTx()
-		if err != nil {
-			return nil, err
-		}
+		// H_MoDIFY: There is no separate distribute rewards tx
+		// tx, err = f.createDistributeRewardsTx()
+		// if err != nil {
+		// 	return nil, err
+		// }
 
-		if err := f.blockBuilder.WriteTx(tx); err != nil {
-			return nil, fmt.Errorf("failed to apply distribute rewards transaction: %w", err)
-		}
+		// if err := f.blockBuilder.WriteTx(tx); err != nil {
+		// 	return nil, fmt.Errorf("failed to apply distribute rewards transaction: %w", err)
+		// }
 	}
 
 	if f.config.IsBridgeEnabled() {
