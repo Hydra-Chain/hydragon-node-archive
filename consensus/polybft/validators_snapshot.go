@@ -46,6 +46,10 @@ func newValidatorsSnapshotCache(
 	}
 }
 
+// @note snapshot is built based on validatorSetDelta extra field in the last block of an epoch
+// starts from genesis if no later snaspshot is found
+// It tries to find it in the program cache first, and if not found, it checks the db (state_store_epoch)
+
 // GetSnapshot tries to retrieve the most recent cached snapshot (if any) and
 // applies pending validator set deltas to it.
 // Otherwise, it builds a snapshot from scratch and applies pending validator set deltas.

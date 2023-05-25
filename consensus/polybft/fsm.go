@@ -120,6 +120,7 @@ func (f *fsm) BuildProposal(currentRound uint64) ([]byte, error) {
 	}
 
 	if f.isEndOfEpoch {
+		// @audit revisti the system tx
 		tx, err := f.createCommitEpochTx()
 		if err != nil {
 			return nil, err
@@ -493,11 +494,12 @@ func (f *fsm) VerifyStateTransactions(transactions []*types.Transaction) error {
 			return errCommitEpochTxDoesNotExist
 		}
 
-		if !distributeRewardsTxExists {
-			// this is a check if distribute rewards transaction is not in the list of transactions at all
-			// but it should be
-			return errDistributeRewardsTxDoesNotExist
-		}
+		// H_MODIFY: We don't have distribute tx (distribution happens on commit epoch tx)
+		// if !distributeRewardsTxExists {
+		// 	// this is a check if distribute rewards transaction is not in the list of transactions at all
+		// 	// but it should be
+		// 	return errDistributeRewardsTxDoesNotExist
+		// }
 	}
 
 	return nil

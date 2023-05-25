@@ -221,6 +221,7 @@ func (c *consensusRuntime) initCheckpointManager(logger hcf.Logger) error {
 
 // initStakeManager initializes stake manager
 func (c *consensusRuntime) initStakeManager(logger hcf.Logger) error {
+	// @audit rootRelayer is not needed and must be removed so we don;t have to add Bridge JSONRPCEndpoint to config
 	rootRelayer, err := txrelayer.NewTxRelayer(txrelayer.WithIPAddress(c.config.PolyBFTConfig.Bridge.JSONRPCEndpoint))
 	if err != nil {
 		return err
@@ -265,6 +266,7 @@ func (c *consensusRuntime) IsBridgeEnabled() bool {
 	return c.config.PolyBFTConfig.IsBridgeEnabled()
 }
 
+// @note crucial method that is called on every block insertion
 // OnBlockInserted is called whenever fsm or syncer inserts new block
 func (c *consensusRuntime) OnBlockInserted(fullBlock *types.FullBlock) {
 	c.lock.Lock()
@@ -294,6 +296,7 @@ func (c *consensusRuntime) OnBlockInserted(fullBlock *types.FullBlock) {
 
 	postBlock := &PostBlockRequest{FullBlock: fullBlock, Epoch: epoch.Number, IsEpochEndingBlock: isEndOfEpoch}
 
+	// @audit this is the place where managers PostBlock methods are called
 	// handle commitment and proofs creation
 	if err := c.stateSyncManager.PostBlock(postBlock); err != nil {
 		c.logger.Error("failed to post block state sync", "err", err)
@@ -427,12 +430,14 @@ func (c *consensusRuntime) restartEpoch(header *types.Header) (*epochMetadata, e
 		return nil, fmt.Errorf("get system state: %w", err)
 	}
 
+	// fetched from the contract
 	epochNumber, err := systemState.GetEpoch()
 	if err != nil {
 		return nil, fmt.Errorf("get epoch: %w", err)
 	}
 
 	if lastEpoch != nil {
+		// @note why epoch may be already in memory?
 		// Epoch might be already in memory, if its the same number do nothing -> just return provided last one
 		// Otherwise, reset the epoch metadata and restart the async services
 		if lastEpoch.Number == epochNumber {
@@ -440,6 +445,7 @@ func (c *consensusRuntime) restartEpoch(header *types.Header) (*epochMetadata, e
 		}
 	}
 
+	// @note validator set is computed from the extra field of the block header
 	validatorSet, err := c.config.polybftBackend.GetValidators(header.Number, nil)
 	if err != nil {
 		return nil, fmt.Errorf("restart epoch - cannot get validators: %w", err)

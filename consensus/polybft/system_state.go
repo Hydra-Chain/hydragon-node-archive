@@ -11,7 +11,13 @@ import (
 	"github.com/umbracle/ethgo/contract"
 )
 
-// @audit system state abstract smart contracts function, so it is the main point we have to update
+// @note system state abstract smart contracts function, so it is the main point we have to update
+
+// VotingPowerExponent is a data transfer object which holds voting power exponent used to balance the voting power
+type VotingPowerExponent struct {
+	Numerator   *big.Int
+	Denominator *big.Int
+}
 
 // ValidatorInfo is data transfer object which holds validator information,
 // provided by smart contract
@@ -31,6 +37,8 @@ type SystemState interface {
 	GetNextCommittedIndex() (uint64, error)
 	// GetStakeOnValidatorSet retrieves stake of given validator on ValidatorSet contract
 	GetStakeOnValidatorSet(validatorAddr types.Address) (*big.Int, error)
+	// GetVotingPowerExponent retrieves voting power exponent from the ChildValidatorSet smart contract
+	GetVotingPowerExponent() (exponent *VotingPowerExponent, err error)
 }
 
 var _ SystemState = &SystemStateImpl{}
@@ -43,13 +51,13 @@ type SystemStateImpl struct {
 
 // NewSystemState initializes new instance of systemState which abstracts smart contracts functions
 func NewSystemState(valSetAddr types.Address, stateRcvAddr types.Address, provider contract.Provider) *SystemStateImpl {
-	// @audit uuse childValidatorSet contract instead of validatorSet contract
+	// H_MODIFY: Use ChildValidatorSet abi
 	s := &SystemStateImpl{}
 	s.validatorContract = contract.NewContract(
 		ethgo.Address(valSetAddr),
-		contractsapi.ValidatorSet.Abi, contract.WithProvider(provider),
+		contractsapi.ChildValidatorSet.Abi, contract.WithProvider(provider),
 	)
-	// @todo check what is the purpose of the sidechainBridgeContract/StateReceiver contract
+
 	s.sidechainBridgeContract = contract.NewContract(
 		ethgo.Address(stateRcvAddr),
 		contractsapi.StateReceiver.Abi,
@@ -59,21 +67,23 @@ func NewSystemState(valSetAddr types.Address, stateRcvAddr types.Address, provid
 	return s
 }
 
+// H_MODIFY: Get validator stake from childValidatorSet contract
 // GetStakeOnValidatorSet retrieves stake of given validator on ValidatorSet contract
 func (s *SystemStateImpl) GetStakeOnValidatorSet(validatorAddr types.Address) (*big.Int, error) {
-	rawResult, err := s.validatorContract.Call("balanceOf", ethgo.Latest, validatorAddr)
+	rawResult, err := s.validatorContract.Call("getValidator", ethgo.Latest, validatorAddr)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to call getValidator function: %w", err)
 	}
 
-	balance, isOk := rawResult["0"].(*big.Int)
+	totalStake, isOk := rawResult["totalStake"].(*big.Int)
 	if !isOk {
 		return nil, fmt.Errorf("failed to decode balance")
 	}
 
-	return balance, nil
+	return totalStake, nil
 }
 
+// @note as I can see source of epoch info is the system state, so epoch state is taken from the contract
 // GetEpoch retrieves current epoch number from the smart contract
 func (s *SystemStateImpl) GetEpoch() (uint64, error) {
 	rawResult, err := s.validatorContract.Call("currentEpochId", ethgo.Latest)
@@ -90,7 +100,26 @@ func (s *SystemStateImpl) GetEpoch() (uint64, error) {
 	return epochNumber.Uint64(), nil
 }
 
-// @audit potentialy remove this function
+// H: add a function to fetch the voting power exponent
+func (s *SystemStateImpl) GetVotingPowerExponent() (exponent *VotingPowerExponent, err error) {
+	rawOutput, err := s.validatorContract.Call("getExponent", ethgo.Latest)
+	if err != nil {
+		return nil, err
+	}
+
+	expNumerator, ok := rawOutput["numerator"].(*big.Int)
+	if !ok {
+		return nil, fmt.Errorf("failed to decode voting power exponent numerator")
+	}
+
+	expDenominator, ok := rawOutput["denominator"].(*big.Int)
+	if !ok {
+		return nil, fmt.Errorf("failed to decode voting power exponent denominator")
+	}
+
+	return &VotingPowerExponent{Numerator: expNumerator, Denominator: expDenominator}, nil
+}
+
 // GetNextCommittedIndex retrieves next committed bridge state sync index
 func (s *SystemStateImpl) GetNextCommittedIndex() (uint64, error) {
 	rawResult, err := s.sidechainBridgeContract.Call("lastCommittedId", ethgo.Latest)

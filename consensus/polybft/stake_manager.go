@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"math"
 	"math/big"
 	"sort"
 	"strings"
@@ -95,6 +96,8 @@ func (s *stakeManager) PostEpoch(req *PostEpochRequest) error {
 }
 
 // @audit this function checks the changes in the validator set and the changes are saved in the db. I suppose the validator set is now fetched from the DB and not from the contract.
+// Potential solution: Use the old method of fetching validators. Apply it here, so the way of keeping data is kept the same.
+// Only the way of fetching would be changed
 
 // PostBlock is called on every insert of finalized block (either from consensus or syncer)
 // It will read any transfer event that happened in block and update full validator set in db
@@ -139,6 +142,10 @@ func (s *stakeManager) PostBlock(req *PostBlockRequest) error {
 		}
 
 		systemState := s.blockchain.GetSystemState(provider)
+		exponent, err := systemState.GetVotingPowerExponent()
+		if err != nil {
+			return fmt.Errorf("could not retrieve voting power exponent")
+		}
 
 		for a := range updatedValidatorsStake {
 			stake, err := systemState.GetStakeOnValidatorSet(a)
@@ -146,7 +153,7 @@ func (s *stakeManager) PostBlock(req *PostBlockRequest) error {
 				return fmt.Errorf("could not retrieve balance of validator %v on ValidatorSet", a)
 			}
 
-			stakeMap.setStake(a, stake)
+			stakeMap.setStake(a, stake, exponent)
 		}
 	}
 
@@ -158,6 +165,7 @@ func (s *stakeManager) PostBlock(req *PostBlockRequest) error {
 			}
 		}
 
+		// @note Here is active is set to true or false. We have to check how voting power is handled currently.
 		data.IsActive = data.VotingPower.Cmp(bigZero) > 0
 	}
 
@@ -173,6 +181,7 @@ func (s *stakeManager) PostBlock(req *PostBlockRequest) error {
 func (s *stakeManager) UpdateValidatorSet(epoch uint64, oldValidatorSet AccountSet) (*ValidatorSetDelta, error) {
 	s.logger.Info("Calculating validators set update...", "epoch", epoch)
 
+	// @todo continue here to find how new valdiators are fetched
 	fullValidatorSet, err := s.state.StakeStore.getFullValidatorSet()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get full validators set. Epoch: %d. Error: %w", epoch, err)
@@ -355,9 +364,8 @@ func newValidatorStakeMap(validatorSet AccountSet) validatorStakeMap {
 	return stakeMap
 }
 
-// @audit voting power is set here, apply our exponent
 // setStake sets given amount of stake to a validator defined by address
-func (sc *validatorStakeMap) setStake(address types.Address, amount *big.Int) {
+func (sc *validatorStakeMap) setStake(address types.Address, amount *big.Int, exponent *VotingPowerExponent) {
 	isActive := amount.Cmp(bigZero) > 0
 
 	if metadata, exists := (*sc)[address]; exists {
@@ -365,11 +373,20 @@ func (sc *validatorStakeMap) setStake(address types.Address, amount *big.Int) {
 		metadata.IsActive = isActive
 	} else {
 		(*sc)[address] = &ValidatorMetadata{
-			VotingPower: new(big.Int).Set(amount),
+			VotingPower: sc.calcVotingPower(amount, exponent),
 			Address:     address,
 			IsActive:    isActive,
 		}
 	}
+}
+
+// calcVotingPower calculates voting power for a given staked balance
+func (sc *validatorStakeMap) calcVotingPower(stakedBalance *big.Int, exp *VotingPowerExponent) *big.Int {
+	stakedH := big.NewInt(0).Div(stakedBalance, big.NewInt(1e18))
+	vpower := math.Pow(float64(stakedH.Uint64()), float64(exp.Numerator.Uint64())/float64(exp.Denominator.Uint64()))
+	res := big.NewInt(int64(vpower))
+
+	return res
 }
 
 // @note getActiveValidators is moved in the node. In 0.7.0 version of the contracts it is handled in the contract

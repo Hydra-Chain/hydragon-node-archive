@@ -27,6 +27,8 @@ var (
 	defaultCheckpointsOffset = uint64(900)
 )
 
+// @audit check the checkpoint manager, where it is used - change with the dummy one (we don't need it)
+
 type CheckpointManager interface {
 	PostBlock(req *PostBlockRequest) error
 	BuildEventRoot(epoch uint64) (types.Hash, error)
