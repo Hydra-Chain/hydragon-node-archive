@@ -13,7 +13,6 @@ import (
 	"github.com/0xPolygon/polygon-edge/consensus/polybft/contractsapi"
 	bls "github.com/0xPolygon/polygon-edge/consensus/polybft/signer"
 	"github.com/0xPolygon/polygon-edge/helper/hex"
-	"github.com/0xPolygon/polygon-edge/txrelayer"
 	"github.com/0xPolygon/polygon-edge/types"
 	"github.com/hashicorp/go-hclog"
 	"github.com/umbracle/ethgo"
@@ -49,14 +48,16 @@ var _ StakeManager = (*stakeManager)(nil)
 // stakeManager saves transfer events that happened in each block
 // and calculates updated validator set based on changed stake
 type stakeManager struct {
-	logger                  hclog.Logger
-	state                   *State
-	rootChainRelayer        txrelayer.TxRelayer
-	blockchain              blockchainBackend
-	key                     ethgo.Key
-	validatorSetContract    types.Address
-	supernetManagerContract types.Address
-	maxValidatorSetSize     int
+	logger hclog.Logger
+	state  *State
+	// H_MODIFY: Root chain is unused so remvoe rootchain relayer
+	// rootChainRelayer        txrelayer.TxRelayer
+	blockchain           blockchainBackend
+	key                  ethgo.Key
+	validatorSetContract types.Address
+	// H_MODIFY: Supernet manager is unused so remove supernet manager
+	// supernetManagerContract types.Address
+	maxValidatorSetSize int
 }
 
 // newStakeManager returns a new instance of stake manager
@@ -64,20 +65,17 @@ func newStakeManager(
 	logger hclog.Logger,
 	state *State,
 	blockchain blockchainBackend,
-	rootchainRelayer txrelayer.TxRelayer,
 	key ethgo.Key,
-	validatorSetAddr, supernetManagerAddr types.Address,
+	validatorSetAddr types.Address,
 	maxValidatorSetSize int,
 ) *stakeManager {
 	return &stakeManager{
-		logger:                  logger,
-		state:                   state,
-		blockchain:              blockchain,
-		rootChainRelayer:        rootchainRelayer,
-		key:                     key,
-		validatorSetContract:    validatorSetAddr,
-		supernetManagerContract: supernetManagerAddr,
-		maxValidatorSetSize:     maxValidatorSetSize,
+		logger:               logger,
+		state:                state,
+		blockchain:           blockchain,
+		key:                  key,
+		validatorSetContract: validatorSetAddr,
+		maxValidatorSetSize:  maxValidatorSetSize,
 	}
 }
 
@@ -287,53 +285,29 @@ func (s *stakeManager) getTransferEventsFromReceipts(receipts []*types.Receipt) 
 
 // getBlsKey returns bls key for validator from the supernet contract
 func (s *stakeManager) getBlsKey(address types.Address) (*bls.PublicKey, error) {
-	getValidatorFn := &contractsapi.GetValidatorCustomSupernetManagerFn{
-		Validator_: address,
-	}
-
-	encoded, err := getValidatorFn.EncodeAbi()
+	header := s.blockchain.CurrentHeader()
+	systemState, err := s.getSystemState(header)
 	if err != nil {
 		return nil, err
 	}
 
-	response, err := s.rootChainRelayer.Call(
-		s.key.Address(),
-		ethgo.Address(s.supernetManagerContract),
-		encoded)
-	if err != nil {
-		return nil, fmt.Errorf("failed to invoke validators function on the supernet manager: %w", err)
-	}
-
-	byteResponse, err := hex.DecodeHex(response)
-	if err != nil {
-		return nil, fmt.Errorf("unable to decode hex response, %w", err)
-	}
-
-	decoded, err := validatorTypeABI.Decode(byteResponse)
+	blsKey, err := systemState.GetValidatorBlsKey(address)
 	if err != nil {
 		return nil, err
 	}
 
-	//nolint:godox
-	// TODO - @goran-ethernal change this to use the generated stub
-	// once we remove old ChildValidatorSet stubs and generate new ones
-	// from the new contract
-	output, ok := decoded.(map[string]interface{})
-	if !ok {
-		return nil, fmt.Errorf("could not convert decoded outputs to map")
-	}
+	return blsKey, nil
+}
 
-	blsKey, ok := output["blsKey"].([4]*big.Int)
-	if !ok {
-		return nil, fmt.Errorf("failed to decode blskey")
-	}
-
-	pubKey, err := bls.UnmarshalPublicKeyFromBigInt(blsKey)
+func (s *stakeManager) getSystemState(block *types.Header) (SystemState, error) {
+	header := s.blockchain.CurrentHeader()
+	provider, err := s.blockchain.GetStateProviderForBlock(header)
 	if err != nil {
-		return nil, fmt.Errorf("failed to unmarshal BLS public key: %w", err)
+		return nil, err
 	}
 
-	return pubKey, nil
+	systemState := s.blockchain.GetSystemState(provider)
+	return systemState, nil
 }
 
 type validatorSetState struct {
@@ -385,6 +359,10 @@ func (sc *validatorStakeMap) calcVotingPower(stakedBalance *big.Int, exp *Voting
 	stakedH := big.NewInt(0).Div(stakedBalance, big.NewInt(1e18))
 	vpower := math.Pow(float64(stakedH.Uint64()), float64(exp.Numerator.Uint64())/float64(exp.Denominator.Uint64()))
 	res := big.NewInt(int64(vpower))
+
+	if res.Cmp(bigZero) == 0 {
+		return big.NewInt(1)
+	}
 
 	return res
 }

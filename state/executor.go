@@ -7,6 +7,7 @@ import (
 	"math/big"
 
 	"github.com/hashicorp/go-hclog"
+	"github.com/umbracle/ethgo/abi"
 
 	"github.com/0xPolygon/polygon-edge/chain"
 	"github.com/0xPolygon/polygon-edge/contracts"
@@ -347,6 +348,17 @@ func (t *Transition) Write(txn *types.Transaction) error {
 	msg := txn.Copy()
 
 	result, e := t.Apply(msg)
+	if result.Reverted() {
+		fmt.Println("the call has reverted")
+		unpackedRevert, err := abi.UnpackRevertError(result.ReturnValue)
+		fmt.Println("the call has reverted", unpackedRevert, "error", e)
+
+		if err == nil {
+		}
+	}
+	fmt.Println("end of revert check")
+
+	fmt.Println("result", result, "error", e)
 	if e != nil {
 		t.logger.Error("failed to apply tx", "err", e)
 
@@ -368,8 +380,10 @@ func (t *Transition) Write(txn *types.Transaction) error {
 	t.state.CleanDeleteObjects(true)
 
 	if result.Failed() {
+		fmt.Println("receipt failed")
 		receipt.SetStatus(types.ReceiptFailed)
 	} else {
+		fmt.Println("receipt success")
 		receipt.SetStatus(types.ReceiptSuccess)
 	}
 
@@ -381,6 +395,7 @@ func (t *Transition) Write(txn *types.Transaction) error {
 	// Set the receipt logs and create a bloom for filtering
 	receipt.Logs = logs
 	receipt.LogsBloom = types.CreateBloom([]*types.Receipt{receipt})
+	fmt.Println("receipt status ", receipt.Status)
 	t.receipts = append(t.receipts, receipt)
 
 	return nil
@@ -417,6 +432,7 @@ func (t *Transition) Apply(msg *types.Transaction) (*runtime.ExecutionResult, er
 	s := t.state.Snapshot()
 
 	result, err := t.apply(msg)
+	fmt.Println("deeper apply result", result, "error", err)
 	if err != nil {
 		t.state.RevertToSnapshot(s)
 	}
@@ -605,6 +621,7 @@ func (t *Transition) apply(msg *types.Transaction) (*runtime.ExecutionResult, er
 		result = t.Create2(msg.From, msg.Input, value, gasLeft)
 	} else {
 		t.state.IncrNonce(msg.From)
+		fmt.Println("apply inputs", msg.From.String(), msg.To.String(), msg.Input)
 		result = t.Call2(msg.From, *msg.To, msg.Input, value, gasLeft)
 	}
 

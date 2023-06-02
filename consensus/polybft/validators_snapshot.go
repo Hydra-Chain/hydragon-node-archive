@@ -57,16 +57,21 @@ func (v *validatorsSnapshotCache) GetSnapshot(blockNumber uint64, parents []*typ
 	v.lock.Lock()
 	defer v.lock.Unlock()
 
+	// get extra field from the block
 	_, extra, err := getBlockData(blockNumber, v.blockchain)
 	if err != nil {
+		// log message here
+		v.logger.Error("PROBLEM")
 		return nil, err
 	}
 
+	// check if the block is epoch ending block
 	isEpochEndingBlock, err := isEpochEndingBlock(blockNumber, extra, v.blockchain)
 	if err != nil && !errors.Is(err, blockchain.ErrNoBlock) {
 		// if there is no block after given block, we assume its not epoch ending block
 		// but, it's a regular use case, and we should not stop the snapshot calculation
 		// because there are cases we need the snapshot for the latest block in chain
+		// log a message here
 		return nil, err
 	}
 

@@ -22,13 +22,16 @@ const (
 // H_MODIFY: Use ChildValidatorSet instead of the new ValidatorSet
 // getInitChildValidatorSetInput builds input parameters for ValidatorSet SC initialization
 func getInitChildValidatorSetInput(polyBFTConfig PolyBFTConfig) ([]byte, error) {
-	// initialValidators := make([]*contractsapi.ValidatorInit, len(polyBFTConfig.InitialValidatorSet))
-	// for i, validator := range polyBFTConfig.InitialValidatorSet {
-	// 	initialValidators[i] = &contractsapi.ValidatorInit{
-	// 		Addr:  validator.Address,
-	// 		Stake: validator.Stake,
-	// 	}
-	// }
+	initialValidators := make([]*contractsapi.ValidatorInit, len(polyBFTConfig.InitialValidatorSet))
+
+	for i, validator := range polyBFTConfig.InitialValidatorSet {
+		validatorData, err := validator.ToValidatorInitAPIBinding()
+		if err != nil {
+			return nil, err
+		}
+
+		initialValidators[i] = validatorData
+	}
 
 	initFn := &contractsapi.InitializeChildValidatorSetFn{
 		Init: &contractsapi.InitStruct{
@@ -39,7 +42,7 @@ func getInitChildValidatorSetInput(polyBFTConfig PolyBFTConfig) ([]byte, error) 
 		},
 		NewBls:     contracts.BLSContract,
 		Governance: polyBFTConfig.Governance,
-		Validators: make([]*contractsapi.ValidatorInit, 0),
+		Validators: initialValidators,
 	}
 
 	return initFn.EncodeAbi()

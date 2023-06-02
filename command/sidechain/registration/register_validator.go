@@ -19,7 +19,7 @@ import (
 
 var (
 	stakeManager = contracts.ValidatorSetContract
-	stakeFn      = contractsapi.ChildValidatorSet.Abi.Methods["stake"]
+	stakeFn      = contractsapi.ValidatorSet.Abi.Methods["stake"]
 )
 
 var params registerParams

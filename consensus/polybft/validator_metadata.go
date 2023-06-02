@@ -137,6 +137,7 @@ func CalculateVPower(stakedBalance *big.Int, expNominator *big.Int, expDenominat
 	stakedH := big.NewInt(0).Div(stakedBalance, big.NewInt(1e18))
 	vpower := math.Pow(float64(stakedH.Uint64()), float64(expNominator.Uint64())/float64(expDenominator.Uint64()))
 	res := big.NewInt(int64(vpower))
+	fmt.Println("TEEEEEST", res)
 
 	return res
 }

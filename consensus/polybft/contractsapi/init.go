@@ -44,8 +44,6 @@ var (
 	ValidatorSet                    *artifact.Artifact
 	RootERC721                      *artifact.Artifact
 	RootERC1155                     *artifact.Artifact
-	// H_MODIFY: add child ValidatorSetContract
-	ValidatorSetContract *artifact.Artifact
 
 	// test smart contracts
 	//go:embed test-contracts/*
@@ -228,6 +226,7 @@ func init() {
 	// }
 
 	// H_MODIFY: initialize ChildValidatorSet artifacts
+	ValidatorSet, err = artifact.DecodeArtifact([]byte(ChildValidatorSetArtifact))
 	ChildValidatorSet, err = artifact.DecodeArtifact([]byte(ChildValidatorSetArtifact))
 }
 

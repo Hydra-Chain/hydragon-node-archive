@@ -221,20 +221,15 @@ func (c *consensusRuntime) initCheckpointManager(logger hcf.Logger) error {
 
 // initStakeManager initializes stake manager
 func (c *consensusRuntime) initStakeManager(logger hcf.Logger) error {
-	// @audit rootRelayer is not needed and must be removed so we don;t have to add Bridge JSONRPCEndpoint to config
-	rootRelayer, err := txrelayer.NewTxRelayer(txrelayer.WithIPAddress(c.config.PolyBFTConfig.Bridge.JSONRPCEndpoint))
-	if err != nil {
-		return err
-	}
+	// H_MODIFY: Root chain is unused so we remove initialization of root relayer
+	// rootRelayer, err := txrelayer.NewTxRelayer(txrelayer.WithIPAddress(c.config.PolyBFTConfig.Bridge.JSONRPCEndpoint))
 
 	c.stakeManager = newStakeManager(
 		logger.Named("stake-manager"),
 		c.state,
 		c.config.blockchain,
-		rootRelayer,
 		wallet.NewEcdsaSigner(c.config.Key),
 		contracts.ValidatorSetContract,
-		c.config.PolyBFTConfig.Bridge.CustomSupernetManagerAddr,
 		int(c.config.PolyBFTConfig.MaxValidatorSetSize),
 	)
 
@@ -425,6 +420,10 @@ func (c *consensusRuntime) FSM() error {
 func (c *consensusRuntime) restartEpoch(header *types.Header) (*epochMetadata, error) {
 	lastEpoch := c.epoch
 
+	// log header block number
+	fmt.Println("Restarting epoch, current block number: ", header.Number)
+
+	fmt.Println("Restarting epoch, current epoch: ", c.epoch)
 	systemState, err := c.getSystemState(header)
 	if err != nil {
 		return nil, fmt.Errorf("get system state: %w", err)
@@ -441,6 +440,7 @@ func (c *consensusRuntime) restartEpoch(header *types.Header) (*epochMetadata, e
 		// Epoch might be already in memory, if its the same number do nothing -> just return provided last one
 		// Otherwise, reset the epoch metadata and restart the async services
 		if lastEpoch.Number == epochNumber {
+			fmt.Println("Epoch already in memory, nothing to do")
 			return lastEpoch, nil
 		}
 	}
@@ -579,7 +579,16 @@ func (c *consensusRuntime) calculateCommitEpochInput(
 		return bytes.Compare(addrSet[i][:], addrSet[j][:]) > 0
 	})
 
+	fmt.Println("LOG COMMIT TX DATA START:")
+	fmt.Println("EpochID:", epochID)
+	fmt.Println("Epoch start block:", epoch.FirstBlockInEpoch)
+	fmt.Println("Epoch end block:", currentBlock.Number+1)
+	fmt.Println("Epoch root:", types.Hash{})
+	fmt.Println("Total blocks:", totalBlocks)
+	fmt.Println("Validators uptime:")
+
 	for _, addr := range addrSet {
+		fmt.Println(addr, uptimeCounter[addr])
 		uptime.AddValidatorUptime(addr, uptimeCounter[addr])
 	}
 

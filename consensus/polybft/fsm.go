@@ -246,6 +246,7 @@ func (f *fsm) getValidatorsTransition(delta *ValidatorSetDelta) (AccountSet, err
 // createCommitEpochTx create a StateTransaction, which invokes ValidatorSet smart contract
 // and sends all the necessary metadata to it.
 func (f *fsm) createCommitEpochTx() (*types.Transaction, error) {
+	fmt.Println("createCommitEpochTx inmput", f.commitEpochInput)
 	input, err := f.commitEpochInput.EncodeAbi()
 	if err != nil {
 		return nil, err

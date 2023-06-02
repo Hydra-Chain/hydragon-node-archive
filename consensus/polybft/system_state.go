@@ -6,6 +6,7 @@ import (
 	"math/big"
 
 	"github.com/0xPolygon/polygon-edge/consensus/polybft/contractsapi"
+	bls "github.com/0xPolygon/polygon-edge/consensus/polybft/signer"
 	"github.com/0xPolygon/polygon-edge/types"
 	"github.com/umbracle/ethgo"
 	"github.com/umbracle/ethgo/contract"
@@ -39,6 +40,8 @@ type SystemState interface {
 	GetStakeOnValidatorSet(validatorAddr types.Address) (*big.Int, error)
 	// GetVotingPowerExponent retrieves voting power exponent from the ChildValidatorSet smart contract
 	GetVotingPowerExponent() (exponent *VotingPowerExponent, err error)
+	// GetValidatorBlsKey retrieves validator BLS public key from the ChildValidatorSet smart contract
+	GetValidatorBlsKey(addr types.Address) (*bls.PublicKey, error)
 }
 
 var _ SystemState = &SystemStateImpl{}
@@ -86,12 +89,16 @@ func (s *SystemStateImpl) GetStakeOnValidatorSet(validatorAddr types.Address) (*
 // @note as I can see source of epoch info is the system state, so epoch state is taken from the contract
 // GetEpoch retrieves current epoch number from the smart contract
 func (s *SystemStateImpl) GetEpoch() (uint64, error) {
+	// @audit wrong epoch number is returned
+	// check how system tx is executed and why epoch data is not changed
 	rawResult, err := s.validatorContract.Call("currentEpochId", ethgo.Latest)
 	if err != nil {
 		return 0, err
 	}
 
 	epochNumber, isOk := rawResult["0"].(*big.Int)
+
+	fmt.Println("HEERE IS IT epochNumber", epochNumber)
 
 	if !isOk {
 		return 0, fmt.Errorf("failed to decode epoch")
@@ -118,6 +125,26 @@ func (s *SystemStateImpl) GetVotingPowerExponent() (exponent *VotingPowerExponen
 	}
 
 	return &VotingPowerExponent{Numerator: expNumerator, Denominator: expDenominator}, nil
+}
+
+// H: add a function to fetch the voting power exponent
+func (s *SystemStateImpl) GetValidatorBlsKey(addr types.Address) (*bls.PublicKey, error) {
+	rawOutput, err := s.validatorContract.Call("getValidator", ethgo.Latest, addr)
+	if err != nil {
+		return nil, fmt.Errorf("failed to call getValidator function: %w", err)
+	}
+
+	rawKey, ok := rawOutput["blsKey"].([4]*big.Int)
+	if !ok {
+		return nil, fmt.Errorf("failed to decode blskey")
+	}
+
+	blsKey, err := bls.UnmarshalPublicKeyFromBigInt(rawKey)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal BLS public key: %w", err)
+	}
+
+	return blsKey, nil
 }
 
 // GetNextCommittedIndex retrieves next committed bridge state sync index
