@@ -127,6 +127,22 @@ func (i *InitializeChildValidatorSetFn) DecodeAbi(buf []byte) error {
 	return decodeMethod(ChildValidatorSet.Abi.Methods["initialize"], buf, i)
 }
 
+type AddToWhitelistChildValidatorSetFn struct {
+	WhitelistAddreses []ethgo.Address `abi:"whitelistAddreses"`
+}
+
+func (a *AddToWhitelistChildValidatorSetFn) Sig() []byte {
+	return ChildValidatorSet.Abi.Methods["addToWhitelist"].ID()
+}
+
+func (a *AddToWhitelistChildValidatorSetFn) EncodeAbi() ([]byte, error) {
+	return ChildValidatorSet.Abi.Methods["addToWhitelist"].Encode(a)
+}
+
+func (a *AddToWhitelistChildValidatorSetFn) DecodeAbi(buf []byte) error {
+	return decodeMethod(ChildValidatorSet.Abi.Methods["addToWhitelist"], buf, a)
+}
+
 type RegisterChildValidatorSetFn struct {
 	Signature [2]*big.Int `abi:"signature"`
 	Pubkey    [4]*big.Int `abi:"pubkey"`
@@ -184,6 +200,113 @@ func (s *StakedEvent) ParseLog(log *ethgo.Log) (bool, error) {
 	}
 
 	return true, decodeEvent(ChildValidatorSet.Abi.Events["Staked"], log, s)
+}
+
+type DelegatedEvent struct {
+	Delegator types.Address `abi:"delegator"`
+	Validator types.Address `abi:"validator"`
+	Amount    *big.Int      `abi:"amount"`
+}
+
+func (*DelegatedEvent) Sig() ethgo.Hash {
+	return ChildValidatorSet.Abi.Events["Delegated"].ID()
+}
+
+func (*DelegatedEvent) Encode(inputs interface{}) ([]byte, error) {
+	return ChildValidatorSet.Abi.Events["Delegated"].Inputs.Encode(inputs)
+}
+
+func (d *DelegatedEvent) ParseLog(log *ethgo.Log) (bool, error) {
+	if !ChildValidatorSet.Abi.Events["Delegated"].Match(log) {
+		return false, nil
+	}
+
+	return true, decodeEvent(ChildValidatorSet.Abi.Events["Delegated"], log, d)
+}
+
+type UnstakedEvent struct {
+	Validator types.Address `abi:"validator"`
+	Amount    *big.Int      `abi:"amount"`
+}
+
+func (*UnstakedEvent) Sig() ethgo.Hash {
+	return ChildValidatorSet.Abi.Events["Unstaked"].ID()
+}
+
+func (*UnstakedEvent) Encode(inputs interface{}) ([]byte, error) {
+	return ChildValidatorSet.Abi.Events["Unstaked"].Inputs.Encode(inputs)
+}
+
+func (u *UnstakedEvent) ParseLog(log *ethgo.Log) (bool, error) {
+	if !ChildValidatorSet.Abi.Events["Unstaked"].Match(log) {
+		return false, nil
+	}
+
+	return true, decodeEvent(ChildValidatorSet.Abi.Events["Unstaked"], log, u)
+}
+
+type UndelegatedEvent struct {
+	Delegator types.Address `abi:"delegator"`
+	Validator types.Address `abi:"validator"`
+	Amount    *big.Int      `abi:"amount"`
+}
+
+func (*UndelegatedEvent) Sig() ethgo.Hash {
+	return ChildValidatorSet.Abi.Events["Undelegated"].ID()
+}
+
+func (*UndelegatedEvent) Encode(inputs interface{}) ([]byte, error) {
+	return ChildValidatorSet.Abi.Events["Undelegated"].Inputs.Encode(inputs)
+}
+
+func (u *UndelegatedEvent) ParseLog(log *ethgo.Log) (bool, error) {
+	if !ChildValidatorSet.Abi.Events["Undelegated"].Match(log) {
+		return false, nil
+	}
+
+	return true, decodeEvent(ChildValidatorSet.Abi.Events["Undelegated"], log, u)
+}
+
+type AddedToWhitelistEvent struct {
+	Validator types.Address `abi:"validator"`
+}
+
+func (*AddedToWhitelistEvent) Sig() ethgo.Hash {
+	return ChildValidatorSet.Abi.Events["AddedToWhitelist"].ID()
+}
+
+func (*AddedToWhitelistEvent) Encode(inputs interface{}) ([]byte, error) {
+	return ChildValidatorSet.Abi.Events["AddedToWhitelist"].Inputs.Encode(inputs)
+}
+
+func (a *AddedToWhitelistEvent) ParseLog(log *ethgo.Log) (bool, error) {
+	if !ChildValidatorSet.Abi.Events["AddedToWhitelist"].Match(log) {
+		return false, nil
+	}
+
+	return true, decodeEvent(ChildValidatorSet.Abi.Events["AddedToWhitelist"], log, a)
+}
+
+type WithdrawalEvent struct {
+	Account types.Address `abi:"account"`
+	To      types.Address `abi:"to"`
+	Amount  *big.Int      `abi:"amount"`
+}
+
+func (*WithdrawalEvent) Sig() ethgo.Hash {
+	return ChildValidatorSet.Abi.Events["Withdrawal"].ID()
+}
+
+func (*WithdrawalEvent) Encode(inputs interface{}) ([]byte, error) {
+	return ChildValidatorSet.Abi.Events["Withdrawal"].Inputs.Encode(inputs)
+}
+
+func (w *WithdrawalEvent) ParseLog(log *ethgo.Log) (bool, error) {
+	if !ChildValidatorSet.Abi.Events["Withdrawal"].Match(log) {
+		return false, nil
+	}
+
+	return true, decodeEvent(ChildValidatorSet.Abi.Events["Withdrawal"], log, w)
 }
 
 type StateSyncCommitment struct {

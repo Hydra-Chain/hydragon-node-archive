@@ -797,26 +797,6 @@ func (v *ValidatorRegisteredEvent) ParseLog(log *ethgo.Log) (bool, error) {
 	return true, decodeEvent(CustomSupernetManager.Abi.Events["ValidatorRegistered"], log, v)
 }
 
-type AddedToWhitelistEvent struct {
-	Validator types.Address `abi:"validator"`
-}
-
-func (*AddedToWhitelistEvent) Sig() ethgo.Hash {
-	return CustomSupernetManager.Abi.Events["AddedToWhitelist"].ID()
-}
-
-func (*AddedToWhitelistEvent) Encode(inputs interface{}) ([]byte, error) {
-	return CustomSupernetManager.Abi.Events["AddedToWhitelist"].Inputs.Encode(inputs)
-}
-
-func (a *AddedToWhitelistEvent) ParseLog(log *ethgo.Log) (bool, error) {
-	if !CustomSupernetManager.Abi.Events["AddedToWhitelist"].Match(log) {
-		return false, nil
-	}
-
-	return true, decodeEvent(CustomSupernetManager.Abi.Events["AddedToWhitelist"], log, a)
-}
-
 type InitializeStakeManagerFn struct {
 	MATIC_ types.Address `abi:"MATIC_"`
 }
@@ -1080,26 +1060,26 @@ func (w *WithdrawalRegisteredEvent) ParseLog(log *ethgo.Log) (bool, error) {
 	return true, decodeEvent(ValidatorSet.Abi.Events["WithdrawalRegistered"], log, w)
 }
 
-type WithdrawalEvent struct {
-	Account types.Address `abi:"account"`
-	Amount  *big.Int      `abi:"amount"`
-}
+// type WithdrawalEvent struct {
+// 	Account types.Address `abi:"account"`
+// 	Amount  *big.Int      `abi:"amount"`
+// }
 
-func (*WithdrawalEvent) Sig() ethgo.Hash {
-	return ValidatorSet.Abi.Events["Withdrawal"].ID()
-}
+// func (*WithdrawalEvent) Sig() ethgo.Hash {
+// 	return ValidatorSet.Abi.Events["Withdrawal"].ID()
+// }
 
-func (*WithdrawalEvent) Encode(inputs interface{}) ([]byte, error) {
-	return ValidatorSet.Abi.Events["Withdrawal"].Inputs.Encode(inputs)
-}
+// func (*WithdrawalEvent) Encode(inputs interface{}) ([]byte, error) {
+// 	return ValidatorSet.Abi.Events["Withdrawal"].Inputs.Encode(inputs)
+// }
 
-func (w *WithdrawalEvent) ParseLog(log *ethgo.Log) (bool, error) {
-	if !ValidatorSet.Abi.Events["Withdrawal"].Match(log) {
-		return false, nil
-	}
+// func (w *WithdrawalEvent) ParseLog(log *ethgo.Log) (bool, error) {
+// 	if !ValidatorSet.Abi.Events["Withdrawal"].Match(log) {
+// 		return false, nil
+// 	}
 
-	return true, decodeEvent(ValidatorSet.Abi.Events["Withdrawal"], log, w)
-}
+// 	return true, decodeEvent(ValidatorSet.Abi.Events["Withdrawal"], log, w)
+// }
 
 type InitializeRewardPoolFn struct {
 	RewardToken  types.Address `abi:"rewardToken"`

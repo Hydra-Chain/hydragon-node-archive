@@ -45,6 +45,8 @@ func main() {
 			[]string{
 				"commitEpoch",
 				"initialize",
+				"addToWhitelist",
+				"register",
 			},
 			[]string{
 				"NewValidator",
