@@ -309,6 +309,28 @@ func (w *WithdrawalEvent) ParseLog(log *ethgo.Log) (bool, error) {
 	return true, decodeEvent(ChildValidatorSet.Abi.Events["Withdrawal"], log, w)
 }
 
+type TransferEvent struct {
+	From  types.Address `abi:"from"`
+	To    types.Address `abi:"to"`
+	Value *big.Int      `abi:"value"`
+}
+
+func (*TransferEvent) Sig() ethgo.Hash {
+	return ChildValidatorSet.Abi.Events["Transfer"].ID()
+}
+
+func (*TransferEvent) Encode(inputs interface{}) ([]byte, error) {
+	return ChildValidatorSet.Abi.Events["Transfer"].Inputs.Encode(inputs)
+}
+
+func (t *TransferEvent) ParseLog(log *ethgo.Log) (bool, error) {
+	if !ChildValidatorSet.Abi.Events["Transfer"].Match(log) {
+		return false, nil
+	}
+
+	return true, decodeEvent(ChildValidatorSet.Abi.Events["Transfer"], log, t)
+}
+
 type StateSyncCommitment struct {
 	StartID *big.Int   `abi:"startId"`
 	EndID   *big.Int   `abi:"endId"`

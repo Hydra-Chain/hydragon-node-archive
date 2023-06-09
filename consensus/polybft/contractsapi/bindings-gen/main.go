@@ -56,6 +56,7 @@ func main() {
 				"Undelegated",
 				"AddedToWhitelist",
 				"Withdrawal",
+				"Transfer",
 			},
 		},
 		{

@@ -163,8 +163,8 @@ func (s *stakeManager) PostBlock(req *PostBlockRequest) error {
 			}
 		}
 
-		// @note Here is active is set to true or false. We have to check how voting power is handled currently.
-		data.IsActive = data.VotingPower.Cmp(bigZero) > 0
+		// H_MODIFY: IsActive is properly handled in setStake
+		// data.IsActive = data.VotingPower.Cmp(bigZero) > 0
 	}
 
 	return s.state.StakeStore.insertFullValidatorSet(validatorSetState{
@@ -338,16 +338,19 @@ func newValidatorStakeMap(validatorSet AccountSet) validatorStakeMap {
 	return stakeMap
 }
 
+// H_MODIFY: Calculate voting power with our own formula
+// Set is active flag based on voting power and not on staked amount
 // setStake sets given amount of stake to a validator defined by address
 func (sc *validatorStakeMap) setStake(address types.Address, amount *big.Int, exponent *VotingPowerExponent) {
-	isActive := amount.Cmp(bigZero) > 0
+	votingPower := sc.calcVotingPower(amount, exponent)
+	isActive := votingPower.Cmp(bigZero) > 0
 
 	if metadata, exists := (*sc)[address]; exists {
-		metadata.VotingPower = amount
+		metadata.VotingPower = votingPower
 		metadata.IsActive = isActive
 	} else {
 		(*sc)[address] = &ValidatorMetadata{
-			VotingPower: sc.calcVotingPower(amount, exponent),
+			VotingPower: votingPower,
 			Address:     address,
 			IsActive:    isActive,
 		}
@@ -356,13 +359,14 @@ func (sc *validatorStakeMap) setStake(address types.Address, amount *big.Int, ex
 
 // calcVotingPower calculates voting power for a given staked balance
 func (sc *validatorStakeMap) calcVotingPower(stakedBalance *big.Int, exp *VotingPowerExponent) *big.Int {
+	// in case validator unstaked its full balance
+	if stakedBalance.Cmp(bigZero) == 0 {
+		return bigZero
+	}
+
 	stakedH := big.NewInt(0).Div(stakedBalance, big.NewInt(1e18))
 	vpower := math.Pow(float64(stakedH.Uint64()), float64(exp.Numerator.Uint64())/float64(exp.Denominator.Uint64()))
 	res := big.NewInt(int64(vpower))
-
-	if res.Cmp(bigZero) == 0 {
-		return big.NewInt(1)
-	}
 
 	return res
 }

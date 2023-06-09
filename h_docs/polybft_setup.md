@@ -58,7 +58,11 @@ I am describing our custom process, because it is different.
 ./polygon-edge genesis --block-gas-limit 10000000 --epoch-size 10 \ --validators-path ./ --validators-prefix test-chain- --consensus polybft --reward-wallet 0x61324166B0202DB1E7502924326262274Fa4358F:1000000 --chain-id 187
 ```
 
-3. Run the chain
+3. Update ChildValidatorSet balance
+
+Open the generated genesis.json file. Update the balance of contract with address **0x0000000000000000000000000000000000000101** to **0x9FFFFFFFFFFFFF8116544D75918EBDB00000**. This is a temporary solution. We need it until a better mechanism of distributing the reward is implemented.
+
+4. Run the chain
 
 ```
 ./polygon-edge server --data-dir ./test-chain-1 --chain genesis.json --grpc-address :5001 --libp2p :30301 --jsonrpc :10001 --seal --log-level DEBUG --log-to ./log

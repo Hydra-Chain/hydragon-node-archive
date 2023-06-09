@@ -70,17 +70,29 @@ func NewSystemState(valSetAddr types.Address, stateRcvAddr types.Address, provid
 	return s
 }
 
-// H_MODIFY: Get validator stake from childValidatorSet contract
+// H_MODIFY: Get validator stake from childValidatorSet contract using the getValidatorTotalStake function
+// TODO: getValidatorTotalStake is a temporary solution and must be removed
+// (check the func in the contract for more info)
 // GetStakeOnValidatorSet retrieves stake of given validator on ValidatorSet contract
 func (s *SystemStateImpl) GetStakeOnValidatorSet(validatorAddr types.Address) (*big.Int, error) {
-	rawResult, err := s.validatorContract.Call("getValidator", ethgo.Latest, validatorAddr)
+	rawResult, err := s.validatorContract.Call("getValidatorTotalStake", ethgo.Latest, validatorAddr)
 	if err != nil {
 		return nil, fmt.Errorf("failed to call getValidator function: %w", err)
 	}
 
+	stake, isOk := rawResult["stake"].(*big.Int)
+	if !isOk {
+		return nil, fmt.Errorf("failed to decode stake")
+	}
+
+	// in case stake is 0 validator is not active no mather is there a delegated balance
+	if stake.Cmp(big.NewInt(0)) == 0 {
+		return bigZero, nil
+	}
+
 	totalStake, isOk := rawResult["totalStake"].(*big.Int)
 	if !isOk {
-		return nil, fmt.Errorf("failed to decode balance")
+		return nil, fmt.Errorf("failed to decode totalStake")
 	}
 
 	return totalStake, nil
