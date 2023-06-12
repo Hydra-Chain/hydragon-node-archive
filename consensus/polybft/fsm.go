@@ -120,7 +120,6 @@ func (f *fsm) BuildProposal(currentRound uint64) ([]byte, error) {
 	}
 
 	if f.isEndOfEpoch {
-		// @audit revisti the system tx
 		tx, err := f.createCommitEpochTx()
 		if err != nil {
 			return nil, err

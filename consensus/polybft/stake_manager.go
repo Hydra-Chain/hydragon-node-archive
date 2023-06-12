@@ -283,7 +283,7 @@ func (s *stakeManager) getTransferEventsFromReceipts(receipts []*types.Receipt) 
 	return events, nil
 }
 
-// getBlsKey returns bls key for validator from the supernet contract
+// H_MODIFY: getBlsKey returns bls key for validator from the childValidatorSet contract
 func (s *stakeManager) getBlsKey(address types.Address) (*bls.PublicKey, error) {
 	header := s.blockchain.CurrentHeader()
 	systemState, err := s.getSystemState(header)

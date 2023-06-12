@@ -139,7 +139,7 @@ func (s *SystemStateImpl) GetVotingPowerExponent() (exponent *VotingPowerExponen
 	return &VotingPowerExponent{Numerator: expNumerator, Denominator: expDenominator}, nil
 }
 
-// H: add a function to fetch the voting power exponent
+// H: add a function to fetch the validator bls key
 func (s *SystemStateImpl) GetValidatorBlsKey(addr types.Address) (*bls.PublicKey, error) {
 	rawOutput, err := s.validatorContract.Call("getValidator", ethgo.Latest, addr)
 	if err != nil {
