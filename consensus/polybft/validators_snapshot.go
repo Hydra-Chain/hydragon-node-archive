@@ -61,7 +61,6 @@ func (v *validatorsSnapshotCache) GetSnapshot(blockNumber uint64, parents []*typ
 	_, extra, err := getBlockData(blockNumber, v.blockchain)
 	if err != nil {
 		// log message here
-		v.logger.Error("PROBLEM")
 		return nil, err
 	}
 
@@ -71,7 +70,6 @@ func (v *validatorsSnapshotCache) GetSnapshot(blockNumber uint64, parents []*typ
 		// if there is no block after given block, we assume its not epoch ending block
 		// but, it's a regular use case, and we should not stop the snapshot calculation
 		// because there are cases we need the snapshot for the latest block in chain
-		// log a message here
 		return nil, err
 	}
 

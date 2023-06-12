@@ -45,6 +45,7 @@ func Factory(params *consensus.Params) (consensus.Consensus, error) {
 		logger:  logger,
 		txPool:  params.TxPool,
 	}
+
 	// initialize polybft consensus config
 	customConfigJSON, err := json.Marshal(params.Config.Config)
 	if err != nil {
@@ -122,7 +123,6 @@ func GenesisPostHookFactory(config *chain.Chain, engineName string) func(txn *st
 			return err
 		}
 
-		fmt.Println("Initializing ValidatorSet contract...")
 		// H_MODIFY: Use ChildValidatorSet instead of the new ValidatorSet
 		if err = initContract(contracts.SystemCaller,
 			contracts.ValidatorSetContract, input, "ChildValidatorSet", transition); err != nil {
@@ -433,15 +433,12 @@ func (p *Polybft) startConsensusProtocol() {
 	for {
 		latestHeader := p.blockchain.CurrentHeader()
 
-		p.logger.Error("PROBLEEEEEEEM current block number", "block number", latestHeader.Number)
-
 		currentValidators, err := p.GetValidators(latestHeader.Number, nil)
 		if err != nil {
 			p.logger.Error("failed to query current validator set", "block number", latestHeader.Number, "error", err)
 		}
 
 		isValidator := currentValidators.ContainsNodeID(p.key.String())
-		p.logger.Error("HEREE is validator", "block number", latestHeader.Number, "is validator", isValidator)
 		p.runtime.setIsActiveValidator(isValidator)
 
 		p.txPool.SetSealing(isValidator) // update tx pool
@@ -455,28 +452,23 @@ func (p *Polybft) startConsensusProtocol() {
 				continue
 			}
 
-			sequenceCh, stopSequence = p.ibft.runSequence(latestHeader.Number+1, p.logger)
-			p.logger.Error("INIT sequnce things", "block number", latestHeader.Number+1)
+			sequenceCh, stopSequence = p.ibft.runSequence(latestHeader.Number + 1)
 		}
 
 		now := time.Now().UTC()
 
 		select {
 		case <-syncerBlockCh:
-			p.logger.Error("Syncer channel:  block notification received")
 			if isValidator {
 				stopSequence()
 				p.logger.Info("canceled sequence", "sequence", latestHeader.Number+1)
 			}
-		case msg, ok := <-sequenceCh:
-			p.logger.Error("Sequence channel: message received", "sequence", latestHeader.Number+1, "message", msg)
-			p.logger.Error("Sequence channel: message received", "sequence", latestHeader.Number+1, "is ok?", ok)
+		case _, ok := <-sequenceCh:
 			if !ok {
 				sequenceCh = nil
+				p.logger.Debug("Sequence channel closed")
 			}
-			p.logger.Error("Sequence channel: sequence completed", "sequence", latestHeader.Number+1)
 		case <-p.closeCh:
-			p.logger.Error("Close channel: sequence completed", "sequence", latestHeader.Number+1)
 			if isValidator {
 				stopSequence()
 			}
@@ -558,7 +550,8 @@ func (p *Polybft) verifyHeaderImpl(parent, header *types.Header, parents []*type
 		header, parent, parents, p.blockchain.GetChainID(), p, bls.DomainCheckpointManager, p.logger)
 }
 
-// H: data is not taken from smart contract but is computed based on validatorSetDelta extra field in the last block of an epoch
+// H: data is not taken from smart contract but is computed
+// based on validatorSetDelta extra field in the last block of an epoch
 // Then it is saved in the db (state_store_epoch)
 func (p *Polybft) GetValidators(blockNumber uint64, parents []*types.Header) (AccountSet, error) {
 	return p.validatorsCache.GetSnapshot(blockNumber, parents)

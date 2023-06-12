@@ -592,12 +592,10 @@ func (b *Blockchain) readTotalDifficulty(headerHash types.Hash) (*big.Int, bool)
 // GetHeaderByNumber returns the header using the block number
 func (b *Blockchain) GetHeaderByNumber(n uint64) (*types.Header, bool) {
 	hash, ok := b.db.ReadCanonicalHash(n)
-	b.logger.Debug("!!!!!!!!!!!! GetHeaderByNumber", "n", n, "hash", hash)
 	if !ok {
 		return nil, false
 	}
 
-	b.logger.Debug("!!!!!!!!!!!! 222 GetHeaderByNumber", "n", n, "hash", hash)
 	h, ok := b.readHeader(hash)
 	if !ok {
 		return nil, false

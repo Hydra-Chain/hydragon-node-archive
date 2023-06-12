@@ -7,7 +7,6 @@ import (
 	"github.com/0xPolygon/polygon-edge/command/rootchain/withdraw"
 
 	// H_MODIFY: Registration module is moved to sidechain
-	"github.com/0xPolygon/polygon-edge/command/sidechain/registration"
 	"github.com/0xPolygon/polygon-edge/command/sidechain/rewards"
 	"github.com/0xPolygon/polygon-edge/command/sidechain/unstaking"
 	sidechainWithdraw "github.com/0xPolygon/polygon-edge/command/sidechain/withdraw"
@@ -20,6 +19,7 @@ func GetCommand() *cobra.Command {
 		Short: "Polybft command",
 	}
 
+	// H_MODIFY: TODO: Modify commands
 	polybftCmd.AddCommand(
 		// sidechain (validator set) command to unstake on child chain
 		unstaking.GetCommand(),
@@ -34,7 +34,7 @@ func GetCommand() *cobra.Command {
 		// rootchain (supernet manager) whitelist validator
 		whitelist.GetCommand(),
 		// rootchain (supernet manager) register validator
-		registration.GetCommand(),
+		// registration.GetCommand(),
 		// rootchain (stake manager) stake command
 		// staking	.GetCommand(),
 		// rootchain (supernet manager) command for finalizing genesis

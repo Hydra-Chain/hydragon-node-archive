@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/0xPolygon/go-ibft/core"
-	"github.com/hashicorp/go-hclog"
 )
 
 // IBFTConsensusWrapper is a convenience wrapper for the go-ibft package
@@ -26,21 +25,19 @@ func newIBFTConsensusWrapper(
 // It may be called by a single thread at any given time
 // It returns channel which will be closed after c.IBFT.RunSequence is done
 // and stopSequence function which can be used to halt c.IBFT.RunSequence routine from outside
-func (c *IBFTConsensusWrapper) runSequence(height uint64, logger hclog.Logger) (<-chan struct{}, func()) {
+func (c *IBFTConsensusWrapper) runSequence(height uint64) (<-chan struct{}, func()) {
 	sequenceDone := make(chan struct{})
 	ctx, cancelSequence := context.WithCancel(context.Background())
 
 	go func() {
 		c.IBFT.RunSequence(ctx, height)
 		cancelSequence()
-		logger.Error("IMPORTANT!!! this is a log message without formatting.\n")
 		close(sequenceDone)
 	}()
 
 	return sequenceDone, func() {
 		// stopSequence terminates the running IBFT sequence gracefully and waits for it to return
 		cancelSequence()
-		logger.Error("IMPORTANT!!! here is the second func")
 		<-sequenceDone // waits until c.IBFT.RunSequenc routine finishes
 	}
 }
