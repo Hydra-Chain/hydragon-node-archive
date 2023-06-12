@@ -12,8 +12,6 @@ import (
 	"github.com/umbracle/ethgo/contract"
 )
 
-// @note system state abstract smart contracts function, so it is the main point we have to update
-
 // VotingPowerExponent is a data transfer object which holds voting power exponent used to balance the voting power
 type VotingPowerExponent struct {
 	Numerator   *big.Int
@@ -98,10 +96,8 @@ func (s *SystemStateImpl) GetStakeOnValidatorSet(validatorAddr types.Address) (*
 	return totalStake, nil
 }
 
-// @note as I can see source of epoch info is the system state, so epoch state is taken from the contract
 // GetEpoch retrieves current epoch number from the smart contract
 func (s *SystemStateImpl) GetEpoch() (uint64, error) {
-	// @audit wrong epoch number is returned
 	// check how system tx is executed and why epoch data is not changed
 	rawResult, err := s.validatorContract.Call("currentEpochId", ethgo.Latest)
 	if err != nil {

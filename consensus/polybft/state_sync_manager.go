@@ -22,8 +22,6 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-// @audit check where it is used and change with the dummy one (we don't need it)
-
 const (
 	// minimum number of stateSyncEvents that a commitment can have
 	// (minimum number is 2 because smart contract expects that the merkle tree has at least two leaves)

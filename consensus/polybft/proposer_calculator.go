@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/go-hclog"
 )
 
-// @audit Maybe we would need to change something here, because we use different formula for the voting power
+// H_MODIFY: TODO: Maybe we would need to change something here, because we use different formula for the voting power
 // so it results in some impact on the priority calculation
 
 var (

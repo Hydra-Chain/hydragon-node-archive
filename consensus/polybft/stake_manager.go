@@ -93,10 +93,6 @@ func (s *stakeManager) PostEpoch(req *PostEpochRequest) error {
 	})
 }
 
-// @audit this function checks the changes in the validator set and the changes are saved in the db. I suppose the validator set is now fetched from the DB and not from the contract.
-// Potential solution: Use the old method of fetching validators. Apply it here, so the way of keeping data is kept the same.
-// Only the way of fetching would be changed
-
 // PostBlock is called on every insert of finalized block (either from consensus or syncer)
 // It will read any transfer event that happened in block and update full validator set in db
 func (s *stakeManager) PostBlock(req *PostBlockRequest) error {
@@ -179,7 +175,6 @@ func (s *stakeManager) PostBlock(req *PostBlockRequest) error {
 func (s *stakeManager) UpdateValidatorSet(epoch uint64, oldValidatorSet AccountSet) (*ValidatorSetDelta, error) {
 	s.logger.Info("Calculating validators set update...", "epoch", epoch)
 
-	// @todo continue here to find how new valdiators are fetched
 	fullValidatorSet, err := s.state.StakeStore.getFullValidatorSet()
 	if err != nil {
 		return nil, fmt.Errorf("failed to get full validators set. Epoch: %d. Error: %w", epoch, err)
@@ -371,7 +366,7 @@ func (sc *validatorStakeMap) calcVotingPower(stakedBalance *big.Int, exp *Voting
 	return res
 }
 
-// @note getActiveValidators is moved in the node. In 0.7.0 version of the contracts it is handled in the contract
+// H: getActiveValidators is moved in the node. In 0.7.0 version of the contracts it is implemented there
 // getActiveValidators returns all validators (*ValidatorMetadata) in sorted order
 func (sc validatorStakeMap) getActiveValidators(maxValidatorSetSize int) AccountSet {
 	activeValidators := make(AccountSet, 0, len(sc))

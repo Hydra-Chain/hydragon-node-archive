@@ -558,7 +558,7 @@ func (p *Polybft) verifyHeaderImpl(parent, header *types.Header, parents []*type
 		header, parent, parents, p.blockchain.GetChainID(), p, bls.DomainCheckpointManager, p.logger)
 }
 
-// @note data is not taken from smart contract but is computed based on validatorSetDelta extra field in the last block of an epoch
+// H: data is not taken from smart contract but is computed based on validatorSetDelta extra field in the last block of an epoch
 // Then it is saved in the db (state_store_epoch)
 func (p *Polybft) GetValidators(blockNumber uint64, parents []*types.Header) (AccountSet, error) {
 	return p.validatorsCache.GetSnapshot(blockNumber, parents)
