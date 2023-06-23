@@ -73,6 +73,11 @@ type fsm struct {
 	// It is populated only for epoch-ending blocks.
 	commitEpochInput *contractsapi.CommitEpochValidatorSetFn
 
+	// commitEpochTxValue holds info about the max amount that may be needed for rewards distribution
+	// It is send to the Validators contract on commitEpoch transaction
+	// It is populated only for epoch-ending blocks.
+	commitEpochTxValue *big.Int
+
 	// distributeRewardsInput holds info about validators work in a single epoch
 	// mainly, how many blocks they signed during given epoch
 	// It is populated only for epoch-ending blocks.
@@ -120,6 +125,11 @@ func (f *fsm) BuildProposal(currentRound uint64) ([]byte, error) {
 	}
 
 	if f.isEndOfEpoch {
+		// H_MODIFY Increase ChildValidatorSet balance here to be able to pay rewards
+		// if err := f.increase(); err != nil {
+		// 	return nil, err
+		// }
+
 		tx, err := f.createCommitEpochTx()
 		if err != nil {
 			return nil, err
@@ -227,7 +237,7 @@ func (f *fsm) createBridgeCommitmentTx() (*types.Transaction, error) {
 		return nil, fmt.Errorf("failed to encode input data for bridge commitment registration: %w", err)
 	}
 
-	return createStateTransactionWithData(contracts.StateReceiverContract, inputData), nil
+	return createStateTransactionWithData(contracts.StateReceiverContract, inputData, nil), nil
 }
 
 // getValidatorsTransition applies delta to the current validators,
@@ -251,7 +261,7 @@ func (f *fsm) createCommitEpochTx() (*types.Transaction, error) {
 		return nil, err
 	}
 
-	return createStateTransactionWithData(contracts.ValidatorSetContract, input), nil
+	return createStateTransactionWithData(contracts.ValidatorSetContract, input, f.commitEpochTxValue), nil
 }
 
 // createDistributeRewardsTx create a StateTransaction, which invokes RewardPool smart contract
@@ -262,7 +272,7 @@ func (f *fsm) createDistributeRewardsTx() (*types.Transaction, error) {
 		return nil, err
 	}
 
-	return createStateTransactionWithData(contracts.RewardPoolContract, input), nil
+	return createStateTransactionWithData(contracts.RewardPoolContract, input, nil), nil
 }
 
 // ValidateCommit is used to validate that a given commit is valid
@@ -664,17 +674,34 @@ func validateHeaderFields(parent *types.Header, header *types.Header) error {
 
 // createStateTransactionWithData creates a state transaction
 // with provided target address and inputData parameter which is ABI encoded byte array.
-func createStateTransactionWithData(target types.Address, inputData []byte) *types.Transaction {
+func createStateTransactionWithData(target types.Address, inputData []byte, value *big.Int) *types.Transaction {
 	tx := &types.Transaction{
 		From:     contracts.SystemCaller,
 		To:       &target,
 		Type:     types.StateTx,
 		Input:    inputData,
 		Gas:      types.StateTransactionGasLimit,
+		Value:    value,
 		GasPrice: big.NewInt(0),
 	}
 
 	tx.ComputeHash()
 
 	return tx
+}
+
+func isCommitEpochTx(tx *types.Transaction) bool {
+	return isToValidatorSetContract(tx) &&
+		isCommitEpochFunc(tx)
+
+}
+
+func isToValidatorSetContract(tx *types.Transaction) bool {
+	return *tx.To == contracts.ValidatorSetContract
+}
+
+func isCommitEpochFunc(tx *types.Transaction) bool {
+	var commitEpochFn contractsapi.CommitEpochChildValidatorSetFn
+
+	return bytes.Equal(tx.Input[:4], commitEpochFn.Sig())
 }

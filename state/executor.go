@@ -577,6 +577,14 @@ func (t *Transition) apply(msg *types.Transaction) (*runtime.ExecutionResult, er
 		return nil, err
 	}
 
+	// @audit ensure nobody (no node) can execute tx with the system address different than the applied
+	// make it with adding checks  on block validation
+
+	// fullfill system account's balance in case value is provided in tx
+	if msg.Type == types.StateTx && msg.Value.Cmp(big.NewInt(0)) > 0 {
+		t.state.AddBalance(msg.From, msg.Value)
+	}
+
 	// the amount of gas required is available in the block
 	if err = t.subGasPool(msg.Gas); err != nil {
 		return nil, NewGasLimitReachedTransitionApplicationError(err)
@@ -605,6 +613,8 @@ func (t *Transition) apply(msg *types.Transaction) (*runtime.ExecutionResult, er
 	// set the specific transaction fields in the context
 	t.ctx.GasPrice = types.BytesToHash(gasPrice.Bytes())
 	t.ctx.Origin = msg.From
+
+	// H_MODIFY: set the msg.input
 
 	var result *runtime.ExecutionResult
 	if msg.IsContractCreation() {
@@ -637,6 +647,7 @@ func (t *Transition) apply(msg *types.Transaction) (*runtime.ExecutionResult, er
 		)
 	}
 
+	// @audit here fees from txs are distributed
 	// Pay the coinbase fee as a miner reward using the calculated effective tip.
 	coinbaseFee := new(big.Int).Mul(new(big.Int).SetUint64(result.GasUsed), effectiveTip)
 	t.state.AddBalance(t.ctx.Coinbase, coinbaseFee)
