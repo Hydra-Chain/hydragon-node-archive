@@ -456,7 +456,7 @@ func TestFSM_VerifyStateTransactions_EndOfEpochWrongCommitEpochTx(t *testing.T) 
 	commitEpochInput, err := createTestCommitEpochInput(t, 1, 5).EncodeAbi()
 	require.NoError(t, err)
 
-	commitEpochTx := createStateTransactionWithData(contracts.ValidatorSetContract, commitEpochInput)
+	commitEpochTx := createStateTransactionWithData(contracts.ValidatorSetContract, commitEpochInput, nil)
 	assert.ErrorContains(t, fsm.VerifyStateTransactions([]*types.Transaction{commitEpochTx}), "invalid commit epoch transaction")
 }
 
@@ -518,7 +518,7 @@ func TestFSM_VerifyStateTransactions_CommitmentTransactionAndSprintIsFalse(t *te
 	encodedCommitment, err := createTestCommitmentMessage(t, 1).EncodeAbi()
 	require.NoError(t, err)
 
-	tx := createStateTransactionWithData(contracts.StateReceiverContract, encodedCommitment)
+	tx := createStateTransactionWithData(contracts.StateReceiverContract, encodedCommitment, nil)
 	assert.ErrorContains(t, fsm.VerifyStateTransactions([]*types.Transaction{tx}),
 		"found commitment tx in block which should not contain it")
 }
@@ -538,7 +538,7 @@ func TestFSM_VerifyStateTransactions_EndOfEpochMoreThanOneCommitEpochTx(t *testi
 	input, err := commitEpochTxTwo.EncodeAbi()
 	require.NoError(t, err)
 
-	txs[1] = createStateTransactionWithData(types.ZeroAddress, input)
+	txs[1] = createStateTransactionWithData(types.ZeroAddress, input, nil)
 
 	assert.ErrorIs(t, fsm.VerifyStateTransactions(txs), errCommitEpochTxSingleExpected)
 }
@@ -783,7 +783,7 @@ func TestFSM_Validate_EpochEndingBlock_MismatchInDeltas(t *testing.T) {
 	stateBlock.Block.Header.ParentHash = parent.Hash
 	stateBlock.Block.Header.Timestamp = uint64(time.Now().UTC().Unix())
 	stateBlock.Block.Transactions = []*types.Transaction{
-		createStateTransactionWithData(contracts.ValidatorSetContract, commitEpochTxInput),
+		createStateTransactionWithData(contracts.ValidatorSetContract, commitEpochTxInput, nil),
 		// createStateTransactionWithData(contracts.RewardPoolContract, distributeRewardsTxInput),
 	}
 
@@ -1234,7 +1234,7 @@ func TestFSM_DecodeCommitEpochStateTx(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, input)
 
-	tx := createStateTransactionWithData(contracts.ValidatorSetContract, input)
+	tx := createStateTransactionWithData(contracts.ValidatorSetContract, input, nil)
 	decodedInputData, err := decodeStateTransaction(tx.Input)
 	require.NoError(t, err)
 
@@ -1280,7 +1280,7 @@ func TestFSM_VerifyStateTransaction_ValidBothTypesOfStateTransactions(t *testing
 			require.NoError(t, err)
 
 			if i == 0 {
-				tx := createStateTransactionWithData(contracts.StateReceiverContract, inputData)
+				tx := createStateTransactionWithData(contracts.StateReceiverContract, inputData, nil)
 				txns = append(txns, tx)
 			}
 		}
@@ -1301,7 +1301,7 @@ func TestFSM_VerifyStateTransaction_InvalidTypeOfStateTransactions(t *testing.T)
 
 	var txns []*types.Transaction
 	txns = append(txns,
-		createStateTransactionWithData(contracts.StateReceiverContract, []byte{9, 3, 1, 1}))
+		createStateTransactionWithData(contracts.StateReceiverContract, []byte{9, 3, 1, 1}, nil))
 
 	require.ErrorContains(t, f.VerifyStateTransactions(txns), "unknown state transaction")
 }
@@ -1328,7 +1328,7 @@ func TestFSM_VerifyStateTransaction_QuorumNotReached(t *testing.T) {
 	require.NoError(t, err)
 
 	txns = append(txns,
-		createStateTransactionWithData(contracts.StateReceiverContract, inputData))
+		createStateTransactionWithData(contracts.StateReceiverContract, inputData, nil))
 
 	err = f.VerifyStateTransactions(txns)
 	require.ErrorContains(t, err, "quorum size not reached for state tx")
@@ -1363,7 +1363,7 @@ func TestFSM_VerifyStateTransaction_InvalidSignature(t *testing.T) {
 	require.NoError(t, err)
 
 	txns = append(txns,
-		createStateTransactionWithData(contracts.StateReceiverContract, inputData))
+		createStateTransactionWithData(contracts.StateReceiverContract, inputData, nil))
 
 	err = f.VerifyStateTransactions(txns)
 	require.ErrorContains(t, err, "invalid signature for tx")
@@ -1394,12 +1394,12 @@ func TestFSM_VerifyStateTransaction_TwoCommitmentMessages(t *testing.T) {
 	require.NoError(t, err)
 
 	txns = append(txns,
-		createStateTransactionWithData(contracts.StateReceiverContract, inputData))
+		createStateTransactionWithData(contracts.StateReceiverContract, inputData, nil))
 	inputData, err = commitmentMessageSigned.EncodeAbi()
 	require.NoError(t, err)
 
 	txns = append(txns,
-		createStateTransactionWithData(contracts.StateReceiverContract, inputData))
+		createStateTransactionWithData(contracts.StateReceiverContract, inputData, nil))
 	err = f.VerifyStateTransactions(txns)
 	require.ErrorContains(t, err, "only one commitment tx is allowed per block")
 }
