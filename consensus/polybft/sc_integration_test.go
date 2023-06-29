@@ -12,6 +12,8 @@ import (
 	"github.com/0xPolygon/polygon-edge/chain"
 	"github.com/0xPolygon/polygon-edge/consensus/polybft/contractsapi"
 	"github.com/0xPolygon/polygon-edge/consensus/polybft/contractsapi/artifact"
+	bls "github.com/0xPolygon/polygon-edge/consensus/polybft/signer"
+	"github.com/0xPolygon/polygon-edge/consensus/polybft/wallet"
 	"github.com/0xPolygon/polygon-edge/contracts"
 	"github.com/0xPolygon/polygon-edge/helper/hex"
 	"github.com/0xPolygon/polygon-edge/state"
@@ -284,8 +286,6 @@ func TestIntegration_CommitEpoch(t *testing.T) {
 		initValidators := make([]*Validator, accSet.Len())
 		// add contracts to genesis data
 		alloc := map[types.Address]*chain.GenesisAccount{
-			// CONTINUE: Remove allocation for unused contracts
-			// continue fixing tests
 			contracts.ValidatorSetContract: {
 				Code: contractsapi.ValidatorSet.DeployedBytecode,
 			},
@@ -399,6 +399,140 @@ func TestIntegration_CommitEpoch(t *testing.T) {
 		// result = transition.Call2(contracts.SystemCaller, contracts.RewardPoolContract, input, big.NewInt(0), 10000000000)
 		// require.NoError(t, result.Err)
 		// t.Logf("Number of validators %d on reward distribution, Gas used %+v\n", accSet.Len(), result.GasUsed)
+	}
+}
+
+func TestIntegration_CommitEpochTwo(t *testing.T) {
+	t.Parallel()
+
+	// init validator sets
+	// (cannot run test case with more than 100 validators at the moment,
+	// because active validator set is capped to 100 on smart contract side)
+	validatorSetSize := []int{5, 10, 50, 100}
+	// number of delegators per validator
+	delegatorsPerValidator := 100
+
+	intialBalance := uint64(5 * math.Pow(10, 18))  // 5 tokens
+	reward := uint64(math.Pow(10, 18))             // 1 token
+	delegateAmount := uint64(math.Pow(10, 18)) / 2 // 0.5 token
+
+	validatorSets := make([]*testValidators, len(validatorSetSize), len(validatorSetSize))
+
+	// create all validator sets which will be used in test
+	for i, size := range validatorSetSize {
+		aliases := make([]string, size, size)
+		vps := make([]uint64, size, size)
+
+		for j := 0; j < size; j++ {
+			aliases[j] = "v" + strconv.Itoa(j)
+			vps[j] = intialBalance
+		}
+
+		validatorSets[i] = newTestValidatorsWithAliases(t, aliases, vps)
+	}
+
+	// iterate through the validator set and do the test for each of them
+	for _, currentValidators := range validatorSets {
+		accSet := currentValidators.getPublicIdentities()
+		accSetPrivateKeys := currentValidators.getPrivateIdentities()
+		valid2deleg := make(map[types.Address][]*wallet.Key, accSet.Len()) // delegators assigned to validators
+
+		// add contracts to genesis data
+		alloc := map[types.Address]*chain.GenesisAccount{
+			contracts.ValidatorSetContract: {
+				Code: contractsapi.ChildValidatorSet.DeployedBytecode,
+			},
+			contracts.BLSContract: {
+				Code: contractsapi.BLS.DeployedBytecode,
+			},
+		}
+
+		// validator data for polybft config
+		initValidators := make([]*Validator, accSet.Len())
+
+		for i, validator := range accSet {
+			// add validator to genesis data
+			alloc[validator.Address] = &chain.GenesisAccount{
+				Balance: validator.VotingPower,
+			}
+
+			signature, err := bls.MakeKOSKSignature(accSetPrivateKeys[i].Bls, validator.Address, 0, bls.DomainValidatorSet)
+			require.NoError(t, err)
+
+			signatureBytes, err := signature.Marshal()
+			require.NoError(t, err)
+
+			// create validator data for polybft config
+			initValidators[i] = &Validator{
+				Address:      validator.Address,
+				Balance:      validator.VotingPower,
+				BlsKey:       hex.EncodeToString(validator.BlsKey.Marshal()),
+				BlsSignature: hex.EncodeToString(signatureBytes),
+			}
+
+			// create delegators
+			delegatorAccs := createRandomTestKeys(t, delegatorsPerValidator)
+
+			// add delegators to genesis data
+			for j := 0; j < delegatorsPerValidator; j++ {
+				delegator := delegatorAccs[j]
+				alloc[types.Address(delegator.Address())] = &chain.GenesisAccount{
+					Balance: new(big.Int).SetUint64(intialBalance),
+				}
+			}
+
+			valid2deleg[validator.Address] = delegatorAccs
+		}
+
+		transition := newTestTransition(t, alloc)
+
+		polyBFTConfig := PolyBFTConfig{
+			InitialValidatorSet: initValidators,
+			EpochSize:           24 * 60 * 60 / 2,
+			SprintSize:          5,
+			EpochReward:         reward,
+			// use 1st account as governance address
+			Governance: currentValidators.toValidatorSet().validators.GetAddresses()[0],
+		}
+
+		// get data for ChildValidatorSet initialization
+		initInput, err := getInitChildValidatorSetInput(polyBFTConfig)
+		require.NoError(t, err)
+
+		// init ChildValidatorSet
+		err = initContract(contracts.SystemCaller, contracts.ValidatorSetContract, initInput, "ChildValidatorSet", transition)
+		require.NoError(t, err)
+
+		// delegate amounts to validators
+		for valAddress, delegators := range valid2deleg {
+			for _, delegator := range delegators {
+				encoded, err := contractsapi.ChildValidatorSet.Abi.Methods["delegate"].Encode(
+					[]interface{}{valAddress, false})
+				require.NoError(t, err)
+
+				result := transition.Call2(types.Address(delegator.Address()), contracts.ValidatorSetContract, encoded, new(big.Int).SetUint64(delegateAmount), 1000000000000)
+				require.False(t, result.Failed())
+			}
+		}
+
+		// create input for commit epoch
+		commitEpoch := createTestCommitEpochInputWithVals(t, 1, accSet, polyBFTConfig.EpochSize)
+		input, err := commitEpoch.EncodeAbi()
+		require.NoError(t, err)
+
+		// call commit epoch
+		result := transition.Call2(contracts.SystemCaller, contracts.ValidatorSetContract, input, big.NewInt(0), 10000000000)
+		require.NoError(t, result.Err)
+		t.Logf("Number of validators %d when we add %d of delegators, Gas used %+v\n", accSet.Len(), accSet.Len()*delegatorsPerValidator, result.GasUsed)
+
+		commitEpoch = createTestCommitEpochInputWithVals(t, 2, accSet, polyBFTConfig.EpochSize)
+		input, err = commitEpoch.EncodeAbi()
+		require.NoError(t, err)
+
+		// call commit epoch
+		result = transition.Call2(contracts.SystemCaller, contracts.ValidatorSetContract, input, big.NewInt(0), 10000000000)
+		require.NoError(t, result.Err)
+		t.Logf("Number of validators %d, Number of delegator %d, Gas used %+v\n", accSet.Len(), accSet.Len()*delegatorsPerValidator, result.GasUsed)
 	}
 }
 

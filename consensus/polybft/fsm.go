@@ -416,9 +416,7 @@ func (f *fsm) ValidateSender(msg *proto.Message) error {
 
 func (f *fsm) VerifyStateTransactions(transactions []*types.Transaction) error {
 	var (
-		commitmentTxExists        bool
-		commitEpochTxExists       bool
-		distributeRewardsTxExists bool
+		commitEpochTxExists bool
 	)
 
 	for _, tx := range transactions {
@@ -432,40 +430,40 @@ func (f *fsm) VerifyStateTransactions(transactions []*types.Transaction) error {
 		}
 
 		switch stateTxData := decodedStateTx.(type) {
-		case *CommitmentMessageSigned:
-			if !f.isEndOfSprint {
-				return fmt.Errorf("found commitment tx in block which should not contain it: tx = %v", tx.Hash)
-			}
+		// case *CommitmentMessageSigned:
+		// 	if !f.isEndOfSprint {
+		// 		return fmt.Errorf("found commitment tx in block which should not contain it: tx = %v", tx.Hash)
+		// 	}
 
-			if commitmentTxExists {
-				return fmt.Errorf("only one commitment tx is allowed per block: %v", tx.Hash)
-			}
+		// 	if commitmentTxExists {
+		// 		return fmt.Errorf("only one commitment tx is allowed per block: %v", tx.Hash)
+		// 	}
 
-			commitmentTxExists = true
+		// 	commitmentTxExists = true
 
-			signers, err := f.validators.Accounts().GetFilteredValidators(stateTxData.AggSignature.Bitmap)
-			if err != nil {
-				return fmt.Errorf("error for state transaction while retrieving signers: tx = %v, error = %w", tx.Hash, err)
-			}
+		// 	signers, err := f.validators.Accounts().GetFilteredValidators(stateTxData.AggSignature.Bitmap)
+		// 	if err != nil {
+		// 		return fmt.Errorf("error for state transaction while retrieving signers: tx = %v, error = %w", tx.Hash, err)
+		// 	}
 
-			if !f.validators.HasQuorum(signers.GetAddressesAsSet()) {
-				return fmt.Errorf("quorum size not reached for state tx: %v", tx.Hash)
-			}
+		// 	if !f.validators.HasQuorum(signers.GetAddressesAsSet()) {
+		// 		return fmt.Errorf("quorum size not reached for state tx: %v", tx.Hash)
+		// 	}
 
-			aggs, err := bls.UnmarshalSignature(stateTxData.AggSignature.AggregatedSignature)
-			if err != nil {
-				return fmt.Errorf("error for state transaction while unmarshaling signature: tx = %v, error = %w", tx.Hash, err)
-			}
+		// 	aggs, err := bls.UnmarshalSignature(stateTxData.AggSignature.AggregatedSignature)
+		// 	if err != nil {
+		// 		return fmt.Errorf("error for state transaction while unmarshaling signature: tx = %v, error = %w", tx.Hash, err)
+		// 	}
 
-			hash, err := stateTxData.Hash()
-			if err != nil {
-				return err
-			}
+		// 	hash, err := stateTxData.Hash()
+		// 	if err != nil {
+		// 		return err
+		// 	}
 
-			verified := aggs.VerifyAggregated(signers.GetBlsKeys(), hash.Bytes(), bls.DomainStateReceiver)
-			if !verified {
-				return fmt.Errorf("invalid signature for tx = %v", tx.Hash)
-			}
+		// 	verified := aggs.VerifyAggregated(signers.GetBlsKeys(), hash.Bytes(), bls.DomainStateReceiver)
+		// 	if !verified {
+		// 		return fmt.Errorf("invalid signature for tx = %v", tx.Hash)
+		// 	}
 		case *contractsapi.CommitEpochValidatorSetFn:
 			if commitEpochTxExists {
 				// if we already validated commit epoch tx,
@@ -479,19 +477,19 @@ func (f *fsm) VerifyStateTransactions(transactions []*types.Transaction) error {
 			if err := f.verifyCommitEpochTx(tx); err != nil {
 				return fmt.Errorf("error while verifying commit epoch transaction. error: %w", err)
 			}
-		case *contractsapi.DistributeRewardForRewardPoolFn:
-			if distributeRewardsTxExists {
-				// if we already validated distribute rewards tx,
-				// that means someone added more than one distribute rewards tx to block,
-				// which is invalid
-				return errDistributeRewardsTxSingleExpected
-			}
+		// case *contractsapi.DistributeRewardForRewardPoolFn:
+		// 	if distributeRewardsTxExists {
+		// 		// if we already validated distribute rewards tx,
+		// 		// that means someone added more than one distribute rewards tx to block,
+		// 		// which is invalid
+		// 		return errDistributeRewardsTxSingleExpected
+		// 	}
 
-			distributeRewardsTxExists = true
+		// 	distributeRewardsTxExists = true
 
-			if err := f.verifyDistributeRewardsTx(tx); err != nil {
-				return fmt.Errorf("error while verifying distribute rewards transaction. error: %w", err)
-			}
+		// 	if err := f.verifyDistributeRewardsTx(tx); err != nil {
+		// 		return fmt.Errorf("error while verifying distribute rewards transaction. error: %w", err)
+		// 	}
 		default:
 			return fmt.Errorf("invalid state transaction data type: %v", stateTxData)
 		}
@@ -690,18 +688,18 @@ func createStateTransactionWithData(target types.Address, inputData []byte, valu
 	return tx
 }
 
-func isCommitEpochTx(tx *types.Transaction) bool {
-	return isToValidatorSetContract(tx) &&
-		isCommitEpochFunc(tx)
+// func isCommitEpochTx(tx *types.Transaction) bool {
+// 	return isToValidatorSetContract(tx) &&
+// 		isCommitEpochFunc(tx)
 
-}
+// }
 
-func isToValidatorSetContract(tx *types.Transaction) bool {
-	return *tx.To == contracts.ValidatorSetContract
-}
+// func isToValidatorSetContract(tx *types.Transaction) bool {
+// 	return *tx.To == contracts.ValidatorSetContract
+// }
 
-func isCommitEpochFunc(tx *types.Transaction) bool {
-	var commitEpochFn contractsapi.CommitEpochChildValidatorSetFn
+// func isCommitEpochFunc(tx *types.Transaction) bool {
+// 	var commitEpochFn contractsapi.CommitEpochChildValidatorSetFn
 
-	return bytes.Equal(tx.Input[:4], commitEpochFn.Sig())
-}
+// 	return bytes.Equal(tx.Input[:4], commitEpochFn.Sig())
+// }

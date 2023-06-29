@@ -577,12 +577,15 @@ func (t *Transition) apply(msg *types.Transaction) (*runtime.ExecutionResult, er
 		return nil, err
 	}
 
-	// @audit ensure nobody (no node) can execute tx with the system address different than the applied
-	// make it with adding checks  on block validation
-
-	// fullfill system account's balance in case value is provided in tx
-	if msg.Type == types.StateTx && msg.Value.Cmp(big.NewInt(0)) > 0 {
+	// H: fullfill system account's balance in case value is provided in tx
+	// System caller can be used in systemTxs only
+	// System transactions are verified at a higher level in fsm
+	// The above ensures fresh balance can be added only when consensus rules are met
+	// @audit ensure balance doesn't stay minted when tx execution is reverted
+	areCoinsMinted := false
+	if msg.From == contracts.SystemCaller && msg.Value.Cmp(big.NewInt(0)) > 0 {
 		t.state.AddBalance(msg.From, msg.Value)
+		areCoinsMinted = true
 	}
 
 	// the amount of gas required is available in the block
@@ -622,6 +625,12 @@ func (t *Transition) apply(msg *types.Transaction) (*runtime.ExecutionResult, er
 	} else {
 		t.state.IncrNonce(msg.From)
 		result = t.Call2(msg.From, *msg.To, msg.Input, value, gasLeft)
+	}
+
+	// H: In case call is not successful and amount is not transfered,
+	// remove it from the system address
+	if areCoinsMinted && result != nil && result.Failed() {
+		t.state.SubBalance(msg.From, msg.Value)
 	}
 
 	refund := t.state.GetRefund()
@@ -804,6 +813,11 @@ func (t *Transition) applyCall(
 
 	result = t.run(c, host)
 	if result.Failed() {
+		if result.Reverted() {
+			// decode revert mesasage
+			unpackedRevert, _ := abi.UnpackRevertError(result.ReturnValue)
+			t.logger.Debug("the call has reverted. Revert msg:", unpackedRevert, "Error: ", result.Err)
+		}
 		t.state.RevertToSnapshot(snapshot)
 	}
 
@@ -1117,6 +1131,14 @@ func checkAndProcessTx(msg *types.Transaction, t *Transition) error {
 	// 3. caller has enough balance to cover transaction
 	if err := t.subGasLimitPrice(msg); err != nil {
 		return NewTransitionApplicationError(err, true)
+	}
+
+	// 4. caller must not be the system caller
+	if msg.From == contracts.SystemCaller {
+		return NewTransitionApplicationError(
+			fmt.Errorf("non-state transaction sender must NOT be %v, but got %v", contracts.SystemCaller, msg.From),
+			true,
+		)
 	}
 
 	return nil
