@@ -515,13 +515,35 @@ func TestIntegration_CommitEpochTwo(t *testing.T) {
 			}
 		}
 
+		// CONTINUE: Debug what is the sum of the staked amount for all validators
+		// as well as what is the reward amount in the contract,
+		// so we can find why it reverts with "INVALID_REWARD_AMOUNT" error
+
+		// create tx value for commit epoch
+		// staked := new(big.Int).Mul(big.NewInt(int64(accSet.Len())), big.NewInt(int64(intialBalance)))
+		// delegatedPerVal := new(big.Int).Mul(big.NewInt(int64(delegatorsPerValidator)), big.NewInt(int64(delegateAmount)))
+		// delegated := new(big.Int).Mul(big.NewInt(int64(accSet.Len())), delegatedPerVal)
+		// total := new(big.Int).Add(staked, delegated)
+
+		// Total staked amount for all validators
+		totalStaked := new(big.Int).Mul(big.NewInt(int64(len(currentValidators.validators))), big.NewInt(int64(intialBalance)))
+
+		// Total delegated amount for all validators
+		totalDelegated := new(big.Int).Mul(big.NewInt(int64(len(currentValidators.validators)*delegatorsPerValidator)), big.NewInt(int64(delegateAmount)))
+
+		totalTwo := big.NewInt(0).Add(totalStaked, totalDelegated)
+
+		commitEpochTxValue := createTestCommitEpochTxValue(t, totalTwo)
+
 		// create input for commit epoch
 		commitEpoch := createTestCommitEpochInputWithVals(t, 1, accSet, polyBFTConfig.EpochSize)
 		input, err := commitEpoch.EncodeAbi()
 		require.NoError(t, err)
 
+		transition.Txn().AddBalance(contracts.SystemCaller, commitEpochTxValue)
+
 		// call commit epoch
-		result := transition.Call2(contracts.SystemCaller, contracts.ValidatorSetContract, input, big.NewInt(0), 10000000000)
+		result := transition.Call2(contracts.SystemCaller, contracts.ValidatorSetContract, input, commitEpochTxValue, 10000000000)
 		require.NoError(t, result.Err)
 		t.Logf("Number of validators %d when we add %d of delegators, Gas used %+v\n", accSet.Len(), accSet.Len()*delegatorsPerValidator, result.GasUsed)
 
@@ -529,8 +551,10 @@ func TestIntegration_CommitEpochTwo(t *testing.T) {
 		input, err = commitEpoch.EncodeAbi()
 		require.NoError(t, err)
 
+		transition.Txn().AddBalance(contracts.SystemCaller, commitEpochTxValue)
+
 		// call commit epoch
-		result = transition.Call2(contracts.SystemCaller, contracts.ValidatorSetContract, input, big.NewInt(0), 10000000000)
+		result = transition.Call2(contracts.SystemCaller, contracts.ValidatorSetContract, input, commitEpochTxValue, 10000000000)
 		require.NoError(t, result.Err)
 		t.Logf("Number of validators %d, Number of delegator %d, Gas used %+v\n", accSet.Len(), accSet.Len()*delegatorsPerValidator, result.GasUsed)
 	}
