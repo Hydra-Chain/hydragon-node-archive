@@ -286,6 +286,14 @@ func (s *systemStateMock) GetStakedBalance() (*big.Int, error) {
 	return balance, err
 }
 
+func (s *systemStateMock) GetMacroFactor() (*big.Int, error) {
+	return big.NewInt(7500), nil
+}
+
+func (s *systemStateMock) GetMaxRSI() (*big.Int, error) {
+	return big.NewInt(15000), nil
+}
+
 var _ contract.Provider = (*stateProviderMock)(nil)
 
 type stateProviderMock struct {

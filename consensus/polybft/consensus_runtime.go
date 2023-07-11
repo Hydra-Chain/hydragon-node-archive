@@ -336,9 +336,6 @@ func (c *consensusRuntime) FSM() error {
 		return fmt.Errorf("cannot create fsm: %w", err)
 	}
 
-	// CONTINUE: Add reward tx input in the fsm struct and init it here, then use it in the fsm
-	// in the executor add a rule systemAddress to be able to send freshly minted coins as tx value
-
 	parent, epoch, proposerSnapshot := sharedData.lastBuiltBlock, sharedData.epoch, sharedData.proposerSnapshot
 
 	if !epoch.Validators.ContainsNodeID(c.config.Key.String()) {

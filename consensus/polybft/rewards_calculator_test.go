@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"github.com/umbracle/ethgo"
 )
 
 func TestRewardsCalculator_getStakedBalance(t *testing.T) {
@@ -24,7 +25,7 @@ func TestRewardsCalculator_getStakedBalance(t *testing.T) {
 		}
 
 		_, err := calculator.getStakedBalance(block)
-		assert.EqualError(t, err, assert.AnError.Error())
+		assert.EqualError(t, err, "Cannot get system state!")
 	})
 
 	t.Run("returns error when systemState.GetStakedBalance fails", func(t *testing.T) {
@@ -73,8 +74,8 @@ func TestRewardsCalculator_GetMaxReward(t *testing.T) {
 		blockchainMock := new(blockchainMock)
 		stateProviderMock := new(stateProviderMock)
 		systemStateMock := new(systemStateMock)
-		blockchainMock.On("GetStateProviderForBlock", block).Return(stateProviderMock, nil).Twice()
-		blockchainMock.On("GetSystemState", stateProviderMock).Return(systemStateMock).Twice()
+		blockchainMock.On("GetStateProviderForBlock", block).Return(stateProviderMock, nil)
+		blockchainMock.On("GetSystemState", stateProviderMock).Return(systemStateMock)
 		return blockchainMock, stateProviderMock, systemStateMock
 	}
 
@@ -101,7 +102,7 @@ func TestRewardsCalculator_GetMaxReward(t *testing.T) {
 
 	t.Run("returns max reward", func(t *testing.T) {
 		blockchainMock, _, systemStateMock := mockSetup()
-		systemStateMock.On("GetStakedBalance").Return(big.NewInt(1000), nil)
+		systemStateMock.On("GetStakedBalance").Return(ethgo.Ether(1), nil)
 		systemStateMock.On("GetBaseReward").Return(&BigNumDecimal{Numerator: big.NewInt(500), Denominator: big.NewInt(10000)}, nil)
 
 		calculator := NewRewardsCalculator(hclog.Default(), blockchainMock)
@@ -109,7 +110,7 @@ func TestRewardsCalculator_GetMaxReward(t *testing.T) {
 		reward, err := calculator.GetMaxReward(block)
 		assert.NoError(t, err)
 
-		expectedReward := big.NewInt(7875)
+		expectedReward := big.NewInt(9564285714285)
 
 		assert.Equal(t, expectedReward, reward)
 	})
@@ -126,13 +127,31 @@ func TestRewardsCalculator_calcMaxReward(t *testing.T) {
 		expectedReward *big.Int
 	}{
 		{
-			name:           "Base setup",
+			name:           "base case",
+			staked:         big.NewInt(10000000000000000),
+			base:           big.NewInt(500),
+			vesting:        big.NewInt(52000),
+			rsi:            big.NewInt(15000),
+			macro:          big.NewInt(10000),
+			expectedReward: big.NewInt(2500000000000),
+		},
+		{
+			name:           "base case 2",
+			staked:         bigIntFromString("275000000000000000000"),
+			base:           big.NewInt(500),
+			vesting:        big.NewInt(2178),
+			rsi:            big.NewInt(15000),
+			macro:          big.NewInt(7500),
+			expectedReward: big.NewInt(2630178571428571),
+		},
+		{
+			name:           "Too small staked amount",
 			staked:         big.NewInt(1000),
 			base:           big.NewInt(500),
 			vesting:        big.NewInt(52000),
 			rsi:            big.NewInt(15000),
 			macro:          big.NewInt(10000),
-			expectedReward: big.NewInt(7875),
+			expectedReward: big.NewInt(0),
 		},
 		{
 			name:           "Zero staked",
@@ -145,25 +164,25 @@ func TestRewardsCalculator_calcMaxReward(t *testing.T) {
 		},
 		{
 			name:           "Zero base",
-			staked:         big.NewInt(100),
+			staked:         big.NewInt(1000000000000000000),
 			base:           big.NewInt(0),
 			vesting:        big.NewInt(1000),
 			rsi:            big.NewInt(15000),
 			macro:          big.NewInt(10000),
-			expectedReward: big.NewInt(15),
+			expectedReward: big.NewInt(4761904761904),
 		},
 		{
 			name:           "Zero vesting",
-			staked:         big.NewInt(100),
+			staked:         big.NewInt(1000000000000000000),
 			base:           big.NewInt(500),
 			vesting:        big.NewInt(0),
 			rsi:            big.NewInt(15000),
 			macro:          big.NewInt(10000),
-			expectedReward: big.NewInt(7),
+			expectedReward: big.NewInt(2380952380952),
 		},
 		{
 			name:           "Zero RSI",
-			staked:         big.NewInt(100),
+			staked:         big.NewInt(1000000000000000000),
 			base:           big.NewInt(500),
 			vesting:        big.NewInt(1000),
 			rsi:            big.NewInt(0),
@@ -172,7 +191,7 @@ func TestRewardsCalculator_calcMaxReward(t *testing.T) {
 		},
 		{
 			name:           "Zero macro factor",
-			staked:         big.NewInt(100),
+			staked:         big.NewInt(1000000000000000000),
 			base:           big.NewInt(500),
 			vesting:        big.NewInt(1000),
 			rsi:            big.NewInt(15000),
@@ -187,4 +206,13 @@ func TestRewardsCalculator_calcMaxReward(t *testing.T) {
 			require.True(t, tt.expectedReward.Cmp(reward) == 0, "expected %s, got %s", tt.expectedReward, reward)
 		})
 	}
+}
+
+func bigIntFromString(s string) *big.Int {
+	i, ok := new(big.Int).SetString(s, 10)
+	if !ok {
+		panic("failed to parse big int")
+	}
+
+	return i
 }

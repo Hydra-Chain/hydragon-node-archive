@@ -44,6 +44,10 @@ type SystemState interface {
 	GetBaseReward() (*BigNumDecimal, error)
 	// GetStakedBalance retrieves total staked balance from the ChildValidatorSet smart contract
 	GetStakedBalance() (*big.Int, error)
+	// GetMacroFactor retrieves APR macro factor from the ChildValidatorSet smart contract
+	GetMacroFactor() (*big.Int, error)
+	// GetMaxRSI retrieves the max RSI from the ChildValidatorSet smart contract
+	GetMaxRSI() (*big.Int, error)
 }
 
 var _ SystemState = &SystemStateImpl{}
@@ -151,6 +155,21 @@ func (s *SystemStateImpl) GetBaseReward() (baseReward *BigNumDecimal, err error)
 	return &BigNumDecimal{Numerator: numerator, Denominator: big.NewInt(10000)}, nil
 }
 
+// GetMaxRSI H: fetch the max RSI bonus from the ChildValidatorSet contract
+func (s *SystemStateImpl) GetMaxRSI() (maxRSI *big.Int, err error) {
+	rawOutput, err := s.validatorContract.Call("getMaxRSI", ethgo.Latest)
+	if err != nil {
+		return nil, err
+	}
+
+	maxRSI, ok := rawOutput["nominator"].(*big.Int)
+	if !ok {
+		return nil, fmt.Errorf("failed to decode max RSI numerator")
+	}
+
+	return maxRSI, nil
+}
+
 // GetStakedBalance H: fetch the total staked balance from the validators contract
 func (s *SystemStateImpl) GetStakedBalance() (*big.Int, error) {
 	rawOutput, err := s.validatorContract.Call("totalStake", ethgo.Latest)
@@ -164,6 +183,21 @@ func (s *SystemStateImpl) GetStakedBalance() (*big.Int, error) {
 	}
 
 	return stake, nil
+}
+
+// GetMacroFactor H: fetch the APR macro factor from the validators contract
+func (s *SystemStateImpl) GetMacroFactor() (*big.Int, error) {
+	rawOutput, err := s.validatorContract.Call("getMacro", ethgo.Latest)
+	if err != nil {
+		return nil, err
+	}
+
+	macro, ok := rawOutput["nominator"].(*big.Int)
+	if !ok {
+		return nil, fmt.Errorf("failed to decode macro factor value")
+	}
+
+	return macro, nil
 }
 
 // H: add a function to fetch the validator bls key
