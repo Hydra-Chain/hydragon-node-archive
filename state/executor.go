@@ -515,11 +515,12 @@ func (t *Transition) checkDynamicFees(msg *types.Transaction) error {
 // surfacing of these errors reject the transaction thus not including it in the block
 
 var (
-	ErrNonceIncorrect        = fmt.Errorf("incorrect nonce")
-	ErrNotEnoughFundsForGas  = fmt.Errorf("not enough funds to cover gas costs")
-	ErrBlockLimitReached     = fmt.Errorf("gas limit reached in the pool")
-	ErrIntrinsicGasOverflow  = fmt.Errorf("overflow in intrinsic gas calculation")
-	ErrNotEnoughIntrinsicGas = fmt.Errorf("not enough gas supplied for intrinsic gas costs")
+	ErrNonceIncorrect               = fmt.Errorf("incorrect nonce")
+	ErrNotEnoughFundsForGas         = fmt.Errorf("not enough funds to cover gas costs")
+	ErrBlockLimitReached            = fmt.Errorf("gas limit reached in the pool")
+	ErrIntrinsicGasOverflow         = fmt.Errorf("overflow in intrinsic gas calculation")
+	ErrNotEnoughIntrinsicGas        = fmt.Errorf("not enough gas supplied for intrinsic gas costs")
+	ErrCannotClearSystemAddrBalance = fmt.Errorf("cannot clear system address balance when contract call failed")
 
 	// ErrTipAboveFeeCap is a sanity error to ensure no one is able to specify a
 	// transaction with a tip higher than the total fee cap.
@@ -581,7 +582,6 @@ func (t *Transition) apply(msg *types.Transaction) (*runtime.ExecutionResult, er
 	// System caller can be used in systemTxs only
 	// System transactions are verified at a higher level in fsm
 	// The above ensures fresh balance can be added only when consensus rules are met
-	// @audit ensure balance doesn't stay minted when tx execution is reverted
 	areCoinsMinted := false
 	if msg.From == contracts.SystemCaller && msg.Value.Cmp(big.NewInt(0)) > 0 {
 		t.state.AddBalance(msg.From, msg.Value)
@@ -617,8 +617,6 @@ func (t *Transition) apply(msg *types.Transaction) (*runtime.ExecutionResult, er
 	t.ctx.GasPrice = types.BytesToHash(gasPrice.Bytes())
 	t.ctx.Origin = msg.From
 
-	// H_MODIFY: set the msg.input
-
 	var result *runtime.ExecutionResult
 	if msg.IsContractCreation() {
 		result = t.Create2(msg.From, msg.Input, value, gasLeft)
@@ -627,10 +625,13 @@ func (t *Transition) apply(msg *types.Transaction) (*runtime.ExecutionResult, er
 		result = t.Call2(msg.From, *msg.To, msg.Input, value, gasLeft)
 	}
 
-	// H: In case call is not successful and amount is not transfered,
+	// H: In case call is not successful and the amount is not transfered,
 	// remove it from the system address
 	if areCoinsMinted && result != nil && result.Failed() {
-		t.state.SubBalance(msg.From, msg.Value)
+		err := t.state.SubBalance(msg.From, msg.Value)
+		if err != nil {
+			return nil, NewTransitionApplicationError(ErrCannotClearSystemAddrBalance, false)
+		}
 	}
 
 	refund := t.state.GetRefund()
@@ -656,7 +657,6 @@ func (t *Transition) apply(msg *types.Transaction) (*runtime.ExecutionResult, er
 		)
 	}
 
-	// @audit here fees from txs are distributed
 	// Pay the coinbase fee as a miner reward using the calculated effective tip.
 	coinbaseFee := new(big.Int).Mul(new(big.Int).SetUint64(result.GasUsed), effectiveTip)
 	t.state.AddBalance(t.ctx.Coinbase, coinbaseFee)
@@ -813,11 +813,6 @@ func (t *Transition) applyCall(
 
 	result = t.run(c, host)
 	if result.Failed() {
-		if result.Reverted() {
-			// decode revert mesasage
-			unpackedRevert, _ := abi.UnpackRevertError(result.ReturnValue)
-			t.logger.Debug("the call has reverted. Revert msg:", unpackedRevert, "Error: ", result.Err)
-		}
 		t.state.RevertToSnapshot(snapshot)
 	}
 

@@ -100,7 +100,6 @@ func (r *rewardsCalculator) GetMaxReward(block *types.Header) (*big.Int, error) 
 	}
 
 	rsiBonus, err := r.getMaxRSIBonus(block)
-
 	if err != nil {
 		return nil, err
 	}
