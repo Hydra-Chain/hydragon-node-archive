@@ -159,20 +159,7 @@ func Test_Transition_checkDynamicFees(t *testing.T) {
 }
 
 func TestExecutor_apply_FeeDistribution(t *testing.T) {
-	state := newStateWithPreState(map[types.Address]*PreState{
-		{0x0}: {
-			Nonce:   1,
-			Balance: 1,
-			State: map[types.Hash]types.Hash{
-				types.ZeroHash: {0x1},
-			},
-		},
-		{0x1}: {
-			State: map[types.Hash]types.Hash{
-				types.ZeroHash: {0x1},
-			},
-		},
-	})
+	state := newStateWithPreState(map[types.Address]*PreState{})
 
 	tr := NewTransition(chain.ForksInTime{}, state, newTxn(state))
 	tr.ctx = runtime.TxContext{
@@ -250,7 +237,6 @@ func TestExecutor_apply_FeeDistribution(t *testing.T) {
 				fmt.Sprintf("Fee handler address balance is not correct. Expected %s, but got %s",
 					expectedFeeHandlerBalance.String(), tr.GetBalance(contracts.FeeHandlerContract).String()))
 
-			// clear accounts balance
 			tr.state.SetBalance(contracts.HydraBurnAddress, ethgo.Ether(0))
 			tr.state.SetBalance(contracts.FeeHandlerContract, ethgo.Ether(0))
 		})
