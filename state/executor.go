@@ -659,24 +659,11 @@ func (t *Transition) apply(msg *types.Transaction) (*runtime.ExecutionResult, er
 
 	// Pay the coinbase fee as a miner reward using the calculated effective tip.
 	coinbaseFee := new(big.Int).Mul(new(big.Int).SetUint64(result.GasUsed), effectiveTip)
-	// Hydra: burn half of the coinbase fee and send the other half to the fee handler
-	toBurn := new(big.Int).Div(coinbaseFee, big.NewInt(2))
-	t.state.AddBalance(t.ctx.BurnContract, toBurn)
-
-	toSend := new(big.Int).Sub(coinbaseFee, toBurn)
-	t.state.AddBalance(t.ctx.Coinbase, coinbaseFee)
-
-	// Continue:
-	// so:
-	// Does transactions in mempool have set gas price and is it somehow taken into account or the one from the blockbuilder is used?
-	// when tx received from sendRawTx, proper gas price fields are set based on tx type,
-	// then tx is validated before entering mempool to ensure that gas price is properly set
-	// then when tx is written to the block, the specified gas price is used
-	// It is a problem for us because we want to control the gas price
-	// finish logic with 50/50 distribution
-	// remove setup of burn contract and just set an address for burn address
-	// remove changes in the docs
-	// add tests for the new mechanism
+	// Hydra: burn half of the coinbase fee and send the other half to the fee handler contract
+	toBurnFee := new(big.Int).Div(coinbaseFee, big.NewInt(2))
+	t.state.AddBalance(contracts.HydraBurnAddress, toBurnFee)
+	toSellFee := new(big.Int).Sub(coinbaseFee, toBurnFee)
+	t.state.AddBalance(contracts.FeeHandlerContract, toSellFee)
 
 	// Burn some amount if the london hardfork is applied.
 	// Basically, burn amount is just transferred to the current burn contract.
@@ -1159,7 +1146,7 @@ func checkAndProcessTx(msg *types.Transaction, t *Transition) error {
 func checkAndProcessStateTx(msg *types.Transaction) error {
 	if msg.GasPrice.Cmp(big.NewInt(0)) != 0 {
 		return NewTransitionApplicationError(
-			errors.New("gasPrice of state transaction must be zero"),
+			fmt.Errorf("gasPrice of state transaction must be zero"),
 			true,
 		)
 	}
