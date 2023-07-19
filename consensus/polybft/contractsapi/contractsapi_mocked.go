@@ -1296,3 +1296,161 @@ func (i *InitializeEIP1559BurnFn) EncodeAbi() ([]byte, error) {
 func (i *InitializeEIP1559BurnFn) DecodeAbi(buf []byte) error {
 	return decodeMethod(EIP1559Burn.Abi.Methods["initialize"], buf, i)
 }
+
+type L2StateSyncedEvent struct {
+	ID       *big.Int      `abi:"id"`
+	Sender   types.Address `abi:"sender"`
+	Receiver types.Address `abi:"receiver"`
+	Data     []byte        `abi:"data"`
+}
+
+func (*L2StateSyncedEvent) Sig() ethgo.Hash {
+	return L2StateSender.Abi.Events["L2StateSynced"].ID()
+}
+
+func (*L2StateSyncedEvent) Encode(inputs interface{}) ([]byte, error) {
+	return L2StateSender.Abi.Events["L2StateSynced"].Inputs.Encode(inputs)
+}
+
+func (l *L2StateSyncedEvent) ParseLog(log *ethgo.Log) (bool, error) {
+	if !L2StateSender.Abi.Events["L2StateSynced"].Match(log) {
+		return false, nil
+	}
+
+	return true, decodeEvent(L2StateSender.Abi.Events["L2StateSynced"], log, l)
+}
+
+type StateSyncCommitment struct {
+	StartID *big.Int   `abi:"startId"`
+	EndID   *big.Int   `abi:"endId"`
+	Root    types.Hash `abi:"root"`
+}
+
+var StateSyncCommitmentABIType = abi.MustNewType("tuple(uint256 startId,uint256 endId,bytes32 root)")
+
+func (s *StateSyncCommitment) EncodeAbi() ([]byte, error) {
+	return StateSyncCommitmentABIType.Encode(s)
+}
+
+func (s *StateSyncCommitment) DecodeAbi(buf []byte) error {
+	return decodeStruct(StateSyncCommitmentABIType, buf, &s)
+}
+
+type CommitStateReceiverFn struct {
+	Commitment *StateSyncCommitment `abi:"commitment"`
+	Signature  []byte               `abi:"signature"`
+	Bitmap     []byte               `abi:"bitmap"`
+}
+
+func (c *CommitStateReceiverFn) Sig() []byte {
+	return StateReceiver.Abi.Methods["commit"].ID()
+}
+
+func (c *CommitStateReceiverFn) EncodeAbi() ([]byte, error) {
+	return StateReceiver.Abi.Methods["commit"].Encode(c)
+}
+
+func (c *CommitStateReceiverFn) DecodeAbi(buf []byte) error {
+	return decodeMethod(StateReceiver.Abi.Methods["commit"], buf, c)
+}
+
+type StateSyncedEvent struct {
+	ID       *big.Int      `abi:"id"`
+	Sender   types.Address `abi:"sender"`
+	Receiver types.Address `abi:"receiver"`
+	Data     []byte        `abi:"data"`
+}
+
+func (*StateSyncedEvent) Sig() ethgo.Hash {
+	return StateSender.Abi.Events["StateSynced"].ID()
+}
+
+func (*StateSyncedEvent) Encode(inputs interface{}) ([]byte, error) {
+	return StateSender.Abi.Events["StateSynced"].Inputs.Encode(inputs)
+}
+
+func (s *StateSyncedEvent) ParseLog(log *ethgo.Log) (bool, error) {
+	if !StateSender.Abi.Events["StateSynced"].Match(log) {
+		return false, nil
+	}
+
+	return true, decodeEvent(StateSender.Abi.Events["StateSynced"], log, s)
+}
+
+type NewCommitmentEvent struct {
+	StartID *big.Int   `abi:"startId"`
+	EndID   *big.Int   `abi:"endId"`
+	Root    types.Hash `abi:"root"`
+}
+
+func (*NewCommitmentEvent) Sig() ethgo.Hash {
+	return StateReceiver.Abi.Events["NewCommitment"].ID()
+}
+
+func (*NewCommitmentEvent) Encode(inputs interface{}) ([]byte, error) {
+	return StateReceiver.Abi.Events["NewCommitment"].Inputs.Encode(inputs)
+}
+
+func (n *NewCommitmentEvent) ParseLog(log *ethgo.Log) (bool, error) {
+	if !StateReceiver.Abi.Events["NewCommitment"].Match(log) {
+		return false, nil
+	}
+
+	return true, decodeEvent(StateReceiver.Abi.Events["NewCommitment"], log, n)
+}
+
+type StateSync struct {
+	ID       *big.Int      `abi:"id"`
+	Sender   types.Address `abi:"sender"`
+	Receiver types.Address `abi:"receiver"`
+	Data     []byte        `abi:"data"`
+}
+
+var StateSyncABIType = abi.MustNewType("tuple(uint256 id,address sender,address receiver,bytes data)")
+
+func (s *StateSync) EncodeAbi() ([]byte, error) {
+	return StateSyncABIType.Encode(s)
+}
+
+func (s *StateSync) DecodeAbi(buf []byte) error {
+	return decodeStruct(StateSyncABIType, buf, &s)
+}
+
+type ExecuteStateReceiverFn struct {
+	Proof []types.Hash `abi:"proof"`
+	Obj   *StateSync   `abi:"obj"`
+}
+
+func (e *ExecuteStateReceiverFn) Sig() []byte {
+	return StateReceiver.Abi.Methods["execute"].ID()
+}
+
+func (e *ExecuteStateReceiverFn) EncodeAbi() ([]byte, error) {
+	return StateReceiver.Abi.Methods["execute"].Encode(e)
+}
+
+func (e *ExecuteStateReceiverFn) DecodeAbi(buf []byte) error {
+	return decodeMethod(StateReceiver.Abi.Methods["execute"], buf, e)
+}
+
+type StateSyncResultEvent struct {
+	Counter *big.Int `abi:"counter"`
+	Status  bool     `abi:"status"`
+	Message []byte   `abi:"message"`
+}
+
+func (*StateSyncResultEvent) Sig() ethgo.Hash {
+	return StateReceiver.Abi.Events["StateSyncResult"].ID()
+}
+
+func (*StateSyncResultEvent) Encode(inputs interface{}) ([]byte, error) {
+	return StateReceiver.Abi.Events["StateSyncResult"].Inputs.Encode(inputs)
+}
+
+func (s *StateSyncResultEvent) ParseLog(log *ethgo.Log) (bool, error) {
+	if !StateReceiver.Abi.Events["StateSyncResult"].Match(log) {
+		return false, nil
+	}
+
+	return true, decodeEvent(StateReceiver.Abi.Events["StateSyncResult"], log, s)
+}
