@@ -1454,3 +1454,39 @@ func (s *StateSyncResultEvent) ParseLog(log *ethgo.Log) (bool, error) {
 
 	return true, decodeEvent(StateReceiver.Abi.Events["StateSyncResult"], log, s)
 }
+
+type SyncStateStateSenderFn struct {
+	Receiver types.Address `abi:"receiver"`
+	Data     []byte        `abi:"data"`
+}
+
+func (s *SyncStateStateSenderFn) Sig() []byte {
+	return StateSender.Abi.Methods["syncState"].ID()
+}
+
+func (s *SyncStateStateSenderFn) EncodeAbi() ([]byte, error) {
+	return StateSender.Abi.Methods["syncState"].Encode(s)
+}
+
+func (s *SyncStateStateSenderFn) DecodeAbi(buf []byte) error {
+	return decodeMethod(StateSender.Abi.Methods["syncState"], buf, s)
+}
+
+type ExitExitHelperFn struct {
+	BlockNumber  *big.Int     `abi:"blockNumber"`
+	LeafIndex    *big.Int     `abi:"leafIndex"`
+	UnhashedLeaf []byte       `abi:"unhashedLeaf"`
+	Proof        []types.Hash `abi:"proof"`
+}
+
+func (e *ExitExitHelperFn) Sig() []byte {
+	return ExitHelper.Abi.Methods["exit"].ID()
+}
+
+func (e *ExitExitHelperFn) EncodeAbi() ([]byte, error) {
+	return ExitHelper.Abi.Methods["exit"].Encode(e)
+}
+
+func (e *ExitExitHelperFn) DecodeAbi(buf []byte) error {
+	return decodeMethod(ExitHelper.Abi.Methods["exit"], buf, e)
+}
