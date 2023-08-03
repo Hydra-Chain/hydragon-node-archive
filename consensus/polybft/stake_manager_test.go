@@ -61,17 +61,18 @@ func TestStakeManager_PostBlock(t *testing.T) {
 		epoch             = uint64(1)
 		block             = uint64(10)
 		newStake          = uint64(100)
-		zeroStake         = uint64(0)
 		firstValidator    = uint64(0)
 		secondValidator   = uint64(1)
 	)
 
 	systemStateMock := new(systemStateMock)
-	systemStateMock.On("GetStakeOnValidatorSet", mock.Anything).Return(big.NewInt(int64(zeroStake)), nil).Once()
+	systemStateMock.On("GetStakeOnValidatorSet", mock.Anything).Return(big.NewInt(15000), nil).Maybe()
+	systemStateMock.On("GetVotingPowerExponent").Return(BigNumDecimal{Numerator: big.NewInt(8500), Denominator: big.NewInt(10000)}, nil).Maybe()
 
 	blockchainMockVar := new(blockchainMock)
-	blockchainMockVar.On("GetStateProviderForBlock", mock.Anything).Return(new(stateProviderMock)).Once()
+	blockchainMockVar.On("GetStateProviderForBlock", mock.Anything).Return(new(stateProviderMock), nil).Maybe()
 	blockchainMockVar.On("GetSystemState", mock.Anything, mock.Anything).Return(systemStateMock)
+	blockchainMockVar.On("CurrentHeader").Return(&types.Header{Number: block}, nil).Maybe()
 
 	state := newTestState(t)
 	t.Run("PostBlock - unstake to zero", func(t *testing.T) {
@@ -100,7 +101,7 @@ func TestStakeManager_PostBlock(t *testing.T) {
 					stakeManager.validatorSetContract,
 					validators.GetValidator(initialSetAliases[firstValidator]).Address(),
 					types.ZeroAddress,
-					1, // initial validator stake was 1
+					15000, // initial validator stake was 15000
 				),
 			},
 		}
@@ -256,6 +257,9 @@ func TestStakeManager_PostBlock(t *testing.T) {
 		bcMock.On("GetHeaderByNumber", block-1).Return(header2, true).Once()
 		bcMock.On("GetReceiptsByHash", header1.Hash).Return([]*types.Receipt{receipt}, error(nil)).Once()
 		bcMock.On("GetReceiptsByHash", header2.Hash).Return([]*types.Receipt{}, error(nil)).Once()
+		bcMock.On("GetStateProviderForBlock", mock.Anything).Return(new(stateProviderMock), nil).Maybe()
+		bcMock.On("GetSystemState", mock.Anything, mock.Anything).Return(systemStateMock)
+		bcMock.On("CurrentHeader").Return(&types.Header{Number: block}, nil).Maybe()
 
 		validators := validator.NewTestValidatorsWithAliases(t, allAliases)
 		stakeManager := newStakeManager(
