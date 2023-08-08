@@ -560,8 +560,8 @@ func (p *genesisParams) getValidatorAccounts(
 	}
 
 	for _, v := range validators {
-		v.Balance = getPremineAmount(v.Address, premineBalances, big.NewInt(0))
-		v.Stake = big.NewInt(0)
+		v.Balance = getPremineAmount(v.Address, premineBalances, command.DefaultPremineBalance)
+		v.Stake = getPremineAmount(v.Address, premineBalances, command.DefaultStake)
 	}
 
 	return validators, nil
