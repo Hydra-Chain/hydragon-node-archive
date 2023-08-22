@@ -41,7 +41,7 @@ I am describing our custom process, because it is different.
 
 ./polygon-edge server --data-dir ./test-chain-4 --chain genesis.json --grpc-address :5004 --libp2p :30304 --jsonrpc :10004 --seal --log-level DEBUG --log-to ./log-4
 
-./polygon-edge server --data-dir ./test-chain-5 --chain genesis.json --grpc-address :5005 --libp2p :30305 --jsonrpc :10004 --seal --log-level DEBUG --log-to ./log-5
+./polygon-edge server --data-dir ./test-chain-5 --chain genesis.json --grpc-address :5005 --libp2p :30305 --jsonrpc :10005 --seal --log-level DEBUG --log-to ./log-5
 
 ```
 
