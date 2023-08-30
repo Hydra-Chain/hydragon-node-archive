@@ -149,6 +149,11 @@ func GenesisPostHookFactory(config *chain.Chain, engineName string) func(txn *st
 			return err
 		}
 
+		// initialize Liquidity Token SC
+		if err = initLiquidityToken(polyBFTConfig, transition); err != nil {
+			return err
+		}
+
 		// // approve reward pool
 		// if err = approveRewardPoolAsSpender(polyBFTConfig, transition); err != nil {
 		// 	return err
