@@ -3,6 +3,7 @@ package polybft
 import (
 	// H_MODIFY: Registration module is moved to sidechain
 	"github.com/0xPolygon/polygon-edge/command/sidechain/registration"
+	"github.com/0xPolygon/polygon-edge/command/sidechain/staking"
 	"github.com/0xPolygon/polygon-edge/command/sidechain/whitelist"
 
 	"github.com/0xPolygon/polygon-edge/command/sidechain/rewards"
@@ -19,6 +20,8 @@ func GetCommand() *cobra.Command {
 
 	// Hydra modification: modify sidechain commands and remove rootchain commands
 	polybftCmd.AddCommand(
+		// sidechain (validator set) command to stake on child chain
+		staking.GetCommand(),
 		// sidechain (validator set) command to unstake on child chain
 		unstaking.GetCommand(),
 		// sidechain (validator set) command to withdraw stake on child chain
