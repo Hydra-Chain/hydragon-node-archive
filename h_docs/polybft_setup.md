@@ -123,9 +123,9 @@ docker pull rsantev/hydrag-devnet:latest
 
 2. If you already have generated secrets, add them as environment variables
 
-Go to the next step in case you don't have already generated secrets
+Go to the next step in case you haven't already generated secrets
 
-Create a env.list file with the following data:
+Create an env.list file with the following data:
 
 ```
 BLS_KEY=
