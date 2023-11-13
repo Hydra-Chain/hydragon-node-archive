@@ -15,4 +15,4 @@ RUN chmod +x secrets.sh
 
 EXPOSE 9632 1478 8545
 
-ENTRYPOINT ./run.sh
+ENTRYPOINT ["./run.sh"]
