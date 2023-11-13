@@ -207,11 +207,18 @@ func (s *stakeManager) updateWithReceipts(
 
 	for _, event := range transferEvents {
 		if event.IsStake() {
-			updatedValidatorsStake[event.To] = struct{}{}
+			s.logger.Debug("Stake transfer event", "to", event.To, "value", event.Value)
+
+			// then this amount was minted To validator address
+			fullValidatorSet.Validators.addStake(event.To, event.Value)
 		} else if event.IsUnstake() {
-			updatedValidatorsStake[event.From] = struct{}{}
+			s.logger.Debug("Unstake transfer event", "from", event.From, "value", event.Value)
+
+			// then this amount was burned From validator address
+			fullValidatorSet.Validators.removeStake(event.From, event.Value)
 		} else {
-			s.logger.Debug("Found a transfer event that represents neither stake nor unstake")
+			// this should not happen, but lets log it if it does
+			s.logger.Warn("Found a transfer event that represents neither stake nor unstake")
 		}
 	}
 
@@ -392,6 +399,20 @@ func newValidatorStakeMap(validatorSet validator.AccountSet) validatorStakeMap {
 	}
 
 	return stakeMap
+}
+
+// addStake adds given amount to a validator defined by address
+func (sc *validatorStakeMap) addStake(address types.Address, amount *big.Int) {
+	if metadata, exists := (*sc)[address]; exists {
+		metadata.VotingPower.Add(metadata.VotingPower, amount)
+		metadata.IsActive = metadata.VotingPower.Cmp(bigZero) > 0
+	} else {
+		(*sc)[address] = &validator.ValidatorMetadata{
+			VotingPower: new(big.Int).Set(amount),
+			Address:     address,
+			IsActive:    amount.Cmp(bigZero) > 0,
+		}
+	}
 }
 
 // Hydra modification: Calculate voting power with our own formula
