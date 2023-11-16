@@ -204,12 +204,11 @@ func (s *stakeManager) updateWithReceipts(
 		return nil
 	}
 
-	provider, err := s.blockchain.GetStateProviderForBlock(blockHeader)
+	systemState, err := s.getSystemStateForBlock(blockHeader)
 	if err != nil {
 		return err
 	}
 
-	systemState := s.blockchain.GetSystemState(provider)
 	exponent, err := systemState.GetVotingPowerExponent()
 	for _, event := range stakeChangedEvents {
 		s.logger.Debug(
@@ -321,11 +320,11 @@ func (s *stakeManager) UpdateValidatorSet(
 	return delta, nil
 }
 
-// getBlsKey returns bls key for validator from the supernet contract
 // Hydra modification: getBlsKey returns bls key for validator from the childValidatorSet contract
+// getBlsKey returns bls key for validator from the supernet contract
 func (s *stakeManager) getBlsKey(address types.Address) (*bls.PublicKey, error) {
 	header := s.blockchain.CurrentHeader()
-	systemState, err := s.getSystemState(header)
+	systemState, err := s.getSystemStateForBlock(header)
 	if err != nil {
 		return nil, err
 	}
@@ -338,7 +337,7 @@ func (s *stakeManager) getBlsKey(address types.Address) (*bls.PublicKey, error) 
 	return blsKey, nil
 }
 
-func (s *stakeManager) getSystemState(block *types.Header) (SystemState, error) {
+func (s *stakeManager) getSystemStateForBlock(block *types.Header) (SystemState, error) {
 	header := s.blockchain.CurrentHeader()
 	provider, err := s.blockchain.GetStateProviderForBlock(header)
 	if err != nil {
