@@ -28,8 +28,6 @@ type ValidatorMetadata struct {
 	BlsKey      *bls.PublicKey
 	VotingPower *big.Int
 	IsActive    bool
-	// Hydra modification: stake is needed so we can properly calculate voting power when transfer events for stake changes are received
-	stake *big.Int
 }
 
 // Equals checks ValidatorMetadata equality
@@ -40,8 +38,7 @@ func (v *ValidatorMetadata) Equals(b *ValidatorMetadata) bool {
 
 	return v.EqualAddressAndBlsKey(b) &&
 		v.VotingPower.Cmp(b.VotingPower) == 0 &&
-		v.IsActive == b.IsActive &&
-		v.stake.Cmp(b.stake) == 0
+		v.IsActive == b.IsActive
 }
 
 // EqualAddressAndBlsKey checks ValidatorMetadata equality against Address and BlsKey fields
@@ -63,7 +60,6 @@ func (v *ValidatorMetadata) Copy() *ValidatorMetadata {
 		BlsKey:      blsKey,
 		VotingPower: new(big.Int).Set(v.VotingPower),
 		IsActive:    v.IsActive,
-		stake:       new(big.Int).Set(v.stake),
 	}
 }
 

@@ -83,9 +83,9 @@ func TestStakeManager_PostBlock(t *testing.T) {
 		customSystemStateMock.On("GetVotingPowerExponent").Return(&BigNumDecimal{Numerator: big.NewInt(5000), Denominator: big.NewInt(10000)}, nil).Once()
 
 		bcMock := new(blockchainMock)
-		bcMock.On("GetStateProviderForBlock", mock.Anything).Return(new(stateProviderMock), nil).Maybe()
-		bcMock.On("GetSystemState", mock.Anything, mock.Anything).Return(customSystemStateMock)
-		bcMock.On("CurrentHeader").Return(&types.Header{Number: block}, nil).Maybe()
+		bcMock.On("GetStateProviderForBlock", mock.Anything).Return(new(stateProviderMock), nil).Twice()
+		bcMock.On("GetSystemState", mock.Anything, mock.Anything).Return(customSystemStateMock).Twice()
+		bcMock.On("CurrentHeader").Return(&types.Header{Number: 0}, nil).Twice()
 
 		validators := validator.NewTestValidatorsWithAliases(t, allAliases)
 
@@ -154,7 +154,7 @@ func TestStakeManager_PostBlock(t *testing.T) {
 			wallet.NewEcdsaSigner(validators.GetValidator("A").Key()),
 			types.StringToAddress("0x0001"),
 			5,
-			blockchainMockVar,
+			bcMock,
 		)
 		require.NoError(t, err)
 
@@ -202,10 +202,12 @@ func TestStakeManager_PostBlock(t *testing.T) {
 	t.Run("PostBlock - add validator and stake", func(t *testing.T) {
 		t.Parallel()
 
-		validators := validator.NewTestValidatorsWithAliases(t, allAliases, []uint64{1, 2, 3, 4, 5, 6})
+		validators := validator.NewTestValidatorsWithAliases(t, allAliases, []uint64{10, 20, 30, 40, 50, 60})
 
 		bcMock := new(blockchainMock)
-		bcMock.On("CurrentHeader").Return(&types.Header{Number: 0}, true).Once()
+		bcMock.On("CurrentHeader").Return(&types.Header{Number: 0}, true).Twice()
+		bcMock.On("GetStateProviderForBlock", mock.Anything).Return(new(stateProviderMock), nil).Twice()
+		bcMock.On("GetSystemState", mock.Anything, mock.Anything).Return(systemStateMockVar).Twice()
 
 		stakeManager, err := newStakeManager(
 			hclog.NewNullLogger(),
@@ -213,7 +215,7 @@ func TestStakeManager_PostBlock(t *testing.T) {
 			wallet.NewEcdsaSigner(validators.GetValidator("A").Key()),
 			types.StringToAddress("0x0001"),
 			5,
-			blockchainMockVar,
+			bcMock,
 		)
 		require.NoError(t, err)
 
@@ -275,7 +277,7 @@ func TestStakeManager_PostBlock(t *testing.T) {
 			wallet.NewEcdsaSigner(validators.GetValidator("A").Key()),
 			types.StringToAddress("0x0001"),
 			5,
-			blockchainMockVar,
+			bcMock,
 		)
 		require.NoError(t, err)
 
@@ -345,7 +347,7 @@ func TestStakeManager_UpdateValidatorSet(t *testing.T) {
 		wallet.NewEcdsaSigner(validators.GetValidator("A").Key()),
 		types.StringToAddress("0x0001"),
 		10,
-		nil,
+		bcMock,
 	)
 	require.NoError(t, err)
 
@@ -537,10 +539,11 @@ func TestStakeManager_UpdateOnInit(t *testing.T) {
 
 	sysStateMock := &systemStateMock{}
 	sysStateMock.On("GetEpoch").Return(epochID, nil).Once()
+	sysStateMock.On("GetVotingPowerExponent").Return(vPowerExp, nil).Once()
 
 	bcMock := new(blockchainMock)
-	bcMock.On("GetStateProviderForBlock", currentHeader).Return(contractProvider, nil).Once()
-	bcMock.On("GetSystemState", contractProvider).Return(sysStateMock, nil).Once()
+	bcMock.On("GetStateProviderForBlock", currentHeader).Return(contractProvider, nil).Twice()
+	bcMock.On("GetSystemState", contractProvider).Return(sysStateMock, nil).Twice()
 	bcMock.On("CurrentHeader", mock.Anything).Return(currentHeader, true).Once()
 	bcMock.On("GetHeaderByNumber", uint64(2)).Return(&types.Header{Number: 2, Hash: header2Hash}, true).Once()
 	bcMock.On("GetHeaderByNumber", uint64(3)).Return(&types.Header{Number: 3, Hash: header3Hash}, true).Once()
@@ -611,7 +614,7 @@ func createTestLogForStakeChangedEvent(t *testing.T, validatorSet, validator typ
 
 	var stakeChangedEvent contractsapi.StakeChangedEvent
 
-	topics := make([]types.Hash, 3)
+	topics := make([]types.Hash, 2)
 	topics[0] = types.Hash(stakeChangedEvent.Sig())
 	topics[1] = types.BytesToHash(validator.Bytes())
 	encodedData, err := abi.MustNewType("uint256").Encode(stake)

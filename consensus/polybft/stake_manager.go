@@ -131,13 +131,13 @@ func (s *stakeManager) PostBlock(req *PostBlockRequest) error {
 		"last saved", fullValidatorSet.BlockNumber,
 		"last updated", fullValidatorSet.UpdatedAtBlockNumber)
 
-	// get transfer currentBlockEvents from current block
-	transferEvents, err := s.eventsGetter.getFromBlocks(fullValidatorSet.BlockNumber, req.FullBlock)
+	// get StakeChanged currentBlockEvents from current block
+	stakeChangedEvents, err := s.eventsGetter.getFromBlocks(fullValidatorSet.BlockNumber, req.FullBlock)
 	if err != nil {
-		return fmt.Errorf("could not get transfer events from current block. Error: %w", err)
+		return fmt.Errorf("could not get StakeChanged events from current block. Error: %w", err)
 	}
 
-	if err = s.updateWithReceipts(&fullValidatorSet, transferEvents, blockHeader); err != nil {
+	if err = s.updateWithReceipts(&fullValidatorSet, stakeChangedEvents, blockHeader); err != nil {
 		return err
 	}
 
@@ -338,8 +338,7 @@ func (s *stakeManager) getBlsKey(address types.Address) (*bls.PublicKey, error) 
 }
 
 func (s *stakeManager) getSystemStateForBlock(block *types.Header) (SystemState, error) {
-	header := s.blockchain.CurrentHeader()
-	provider, err := s.blockchain.GetStateProviderForBlock(header)
+	provider, err := s.blockchain.GetStateProviderForBlock(block)
 	if err != nil {
 		return nil, err
 	}

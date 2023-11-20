@@ -25,7 +25,7 @@ type postBlockStructF struct {
 	EpochID     uint64
 	ValidatorID uint64
 	BlockID     uint64
-	StakeValue  uint64
+	StakeValue  *big.Int
 }
 
 type updateValidatorSetF struct {
@@ -107,25 +107,25 @@ func FuzzTestStakeManagerPostBlock(f *testing.F) {
 			EpochID:     0,
 			ValidatorID: 1,
 			BlockID:     1,
-			StakeValue:  30,
+			StakeValue:  new(big.Int).Mul(big.NewInt(30), big.NewInt(1e18)),
 		},
 		{
 			EpochID:     5,
 			ValidatorID: 30,
 			BlockID:     4,
-			StakeValue:  60,
+			StakeValue:  new(big.Int).Mul(big.NewInt(60), big.NewInt(1e18)),
 		},
 		{
 			EpochID:     1,
 			ValidatorID: 42,
 			BlockID:     11,
-			StakeValue:  70,
+			StakeValue:  new(big.Int).Mul(big.NewInt(70), big.NewInt(1e18)),
 		},
 		{
 			EpochID:     7,
 			ValidatorID: 1,
 			BlockID:     2,
-			StakeValue:  10,
+			StakeValue:  new(big.Int).Mul(big.NewInt(10), big.NewInt(1e18)),
 		},
 	}
 
@@ -180,11 +180,10 @@ func FuzzTestStakeManagerPostBlock(f *testing.F) {
 
 		receipt := &types.Receipt{
 			Logs: []*types.Log{
-				createTestLogForTransferEvent(
+				createTestLogForStakeChangedEvent(
 					t,
 					validatorSetAddr,
 					validators.GetValidator(initialSetAliases[data.ValidatorID]).Address(),
-					types.ZeroAddress,
 					data.StakeValue,
 				),
 			},
