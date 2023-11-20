@@ -169,7 +169,7 @@ func FuzzTestStakeManagerPostBlock(f *testing.F) {
 			wallet.NewEcdsaSigner(validators.GetValidator("A").Key()),
 			types.StringToAddress("0x0002"),
 			5,
-			nil,
+			bcMock,
 		)
 		require.NoError(t, err)
 
@@ -216,7 +216,7 @@ func FuzzTestStakeManagerUpdateValidatorSet(f *testing.F) {
 		wallet.NewEcdsaSigner(validators.GetValidator("A").Key()),
 		types.StringToAddress("0x0001"),
 		10,
-		nil,
+		bcMock,
 	)
 	require.NoError(f, err)
 

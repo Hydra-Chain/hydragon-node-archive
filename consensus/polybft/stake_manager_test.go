@@ -143,8 +143,13 @@ func TestStakeManager_PostBlock(t *testing.T) {
 	t.Run("PostBlock - add stake to one validator", func(t *testing.T) {
 		t.Parallel()
 
+		systemStateMockVar := new(systemStateMock)
+		systemStateMockVar.On("GetVotingPowerExponent").Return(vPowerExp, nil).Once()
+
 		bcMock := new(blockchainMock)
 		bcMock.On("CurrentHeader").Return(&types.Header{Number: 0}, true).Once()
+		bcMock.On("GetStateProviderForBlock", mock.Anything).Return(new(stateProviderMock), nil).Times(3)
+		bcMock.On("GetSystemState", mock.Anything, mock.Anything).Return(systemStateMockVar).Times(3)
 
 		validators := validator.NewTestValidatorsWithAliases(t, allAliases)
 
@@ -252,7 +257,7 @@ func TestStakeManager_PostBlock(t *testing.T) {
 
 		validatorsCount := validators.ToValidatorSet().Len()
 		for _, v := range fullValidatorSet.Validators.getSorted(validatorsCount) {
-			require.Equal(t, validator.CalculateVPower(stakeAmount, vPowerExp.Numerator, vPowerExp.Denominator), v.VotingPower.Uint64())
+			require.Equal(t, validator.CalculateVPower(stakeAmount, vPowerExp.Numerator, vPowerExp.Denominator), v.VotingPower)
 		}
 	})
 
@@ -262,12 +267,17 @@ func TestStakeManager_PostBlock(t *testing.T) {
 		receipt := &types.Receipt{}
 		header1, header2 := &types.Header{Hash: types.Hash{3, 2}, Number: 0}, &types.Header{Hash: types.Hash{6, 4}, Number: 0}
 
+		systemStateMockVar := new(systemStateMock)
+		systemStateMockVar.On("GetVotingPowerExponent").Return(vPowerExp, nil).Once()
+
 		bcMock := new(blockchainMock)
 		bcMock.On("CurrentHeader").Return(header1)
 		bcMock.On("GetHeaderByNumber", block-2).Return(header1, true).Once()
 		bcMock.On("GetHeaderByNumber", block-1).Return(header2, true).Once()
 		bcMock.On("GetReceiptsByHash", header1.Hash).Return([]*types.Receipt{receipt}, error(nil)).Once()
 		bcMock.On("GetReceiptsByHash", header2.Hash).Return([]*types.Receipt{}, error(nil)).Once()
+		bcMock.On("GetStateProviderForBlock", mock.Anything).Return(new(stateProviderMock), nil).Once()
+		bcMock.On("GetSystemState", mock.Anything, mock.Anything).Return(systemStateMockVar).Once()
 
 		validators := validator.NewTestValidatorsWithAliases(t, allAliases)
 
@@ -324,7 +334,7 @@ func TestStakeManager_PostBlock(t *testing.T) {
 		)
 		require.True(t, updatedValidator.IsActive)
 
-		blockchainMockVar.AssertExpectations(t)
+		bcMock.AssertExpectations(t)
 	})
 }
 
@@ -604,7 +614,7 @@ func TestStakeManager_UpdateOnInit(t *testing.T) {
 		} else if x.Address == addresses[len(addresses)-2] {
 			require.Equal(t, validator.CalculateVPower(stakeAmountTwo, vPowerExp.Numerator, vPowerExp.Denominator), x.VotingPower)
 		} else {
-			require.Equal(t, validator.CalculateVPower(stakeAmount, vPowerExp.Numerator, vPowerExp.Denominator), x.VotingPower)
+			require.Equal(t, big.NewInt(15000), x.VotingPower)
 		}
 	}
 }
