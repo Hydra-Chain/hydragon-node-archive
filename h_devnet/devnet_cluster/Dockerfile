@@ -2,6 +2,8 @@ FROM rsantev/polygon-edge:latest
 
 WORKDIR /app
 
+USER root
+
 RUN apk --no-cache add ca-certificates jq
 
 COPY ./polygon-edge.sh ./

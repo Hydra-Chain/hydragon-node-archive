@@ -2,6 +2,8 @@ FROM rsantev/polygon-edge:latest
 
 WORKDIR /app
 
+USER root
+
 RUN apk add --no-cache bash curl
 
 COPY ./scripts/secrets.sh .
