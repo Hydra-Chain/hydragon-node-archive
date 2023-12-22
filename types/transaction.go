@@ -208,11 +208,9 @@ func (t *Transaction) EffectiveGasTip(baseFee *big.Int) *big.Int {
 		return t.GetGasTipCap()
 	}
 
-	tipCap := new(big.Int).Set(t.GetGasTipCap())
-	feeCapInitial := t.GetGasFeeCap()
-	feeCap := new(big.Int).Sub(feeCapInitial, baseFee)
-	min := common.BigMin(tipCap, feeCap)
-	return min
+	return common.BigMin(
+		new(big.Int).Set(t.GetGasTipCap()),
+		new(big.Int).Sub(t.GetGasFeeCap(), baseFee))
 }
 
 // GetGasTipCap gets gas tip cap depending on tx type
