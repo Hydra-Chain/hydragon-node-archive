@@ -21,6 +21,7 @@ const (
 	numFlag                = "num"
 	outputFlag             = "output"
 	chainIDFlag            = "chain-id"
+	networkKeyFlag         = "network-key"
 
 	// maxInitNum is the maximum value for "num" flag
 	maxInitNum = 30
@@ -42,6 +43,8 @@ type initParams struct {
 	output bool
 
 	chainID int64
+
+	networkKey string
 }
 
 func (ip *initParams) validateFlags() error {
@@ -78,12 +81,21 @@ func (ip *initParams) setFlags(cmd *cobra.Command) {
 		"the flag indicating how many secrets should be created, only for the local FS",
 	)
 
+	cmd.Flags().StringVar(
+		&ip.networkKey,
+		networkKeyFlag,
+		"",
+		"the flag providing already created network key to be used",
+	)
+
 	// Don't accept data-dir and config flags because they are related to different secrets managers.
 	// data-dir is about the local FS as secrets storage, config is about remote secrets manager.
 	cmd.MarkFlagsMutuallyExclusive(AccountDirFlag, AccountConfigFlag)
 
 	// num flag should be used with data-dir flag only so it should not be used with config flag.
 	cmd.MarkFlagsMutuallyExclusive(numFlag, AccountConfigFlag)
+
+	cmd.MarkFlagsMutuallyExclusive(numFlag, networkKeyFlag)
 
 	cmd.Flags().BoolVar(
 		&ip.generatesAccount,
@@ -171,7 +183,7 @@ func (ip *initParams) initKeys(secretsManager secrets.SecretsManager) ([]string,
 
 	if ip.generatesNetwork {
 		if !secretsManager.HasSecret(secrets.NetworkKey) {
-			if _, err := helper.InitNetworkingPrivateKey(secretsManager); err != nil {
+			if _, err := helper.InitNetworkingPrivateKey(secretsManager, []byte(ip.networkKey)); err != nil {
 				return generated, fmt.Errorf("error initializing network-key: %w", err)
 			}
 
