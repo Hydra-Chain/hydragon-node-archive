@@ -4,30 +4,36 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
+	"fmt"
 	"io"
+
+	"golang.org/x/crypto/scrypt"
 )
 
 type PasswordHandler interface {
-	InputPassword() ([]byte, error)
+	GeneratePassword() ([]byte, error)
+	InputPassword(bool) ([]byte, error)
 }
 
 type CryptHandler interface {
-	Encrypt(data []byte) ([]byte, error)
-	Decrypt(data []byte) ([]byte, error)
+	Encrypt(data []byte, pwd []byte) ([]byte, error)
+	Decrypt(data []byte, pwd []byte) ([]byte, error)
 }
 
 type cryptHandler struct {
 	passHandler PasswordHandler
+	pwd         string
 }
 
 func NewCryptHandler(passHandler PasswordHandler) CryptHandler {
 	return &cryptHandler{
 		passHandler: passHandler,
+		pwd:         "",
 	}
 }
 
-func (ch *cryptHandler) Encrypt(data []byte) ([]byte, error) {
-	key, err := ch.passHandler.InputPassword()
+func (ch *cryptHandler) Encrypt(data []byte, pwd []byte) ([]byte, error) {
+	key, salt, err := DeriveKey(pwd, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -43,16 +49,18 @@ func (ch *cryptHandler) Encrypt(data []byte) ([]byte, error) {
 	}
 
 	nonce := make([]byte, gcm.NonceSize())
-
 	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
 		return nil, err
 	}
 
-	return gcm.Seal(nonce, nonce, data, nil), nil
+	cipherText := gcm.Seal(nonce, nonce, data, nil)
+
+	return append(cipherText, salt...), nil
 }
 
-func (ch *cryptHandler) Decrypt(data []byte) ([]byte, error) {
-	key, err := ch.passHandler.InputPassword()
+func (ch *cryptHandler) Decrypt(data []byte, pwd []byte) ([]byte, error) {
+	salt, data := data[len(data)-32:], data[:len(data)-32]
+	key, _, err := DeriveKey(pwd, salt)
 	if err != nil {
 		return nil, err
 	}
@@ -73,6 +81,29 @@ func (ch *cryptHandler) Decrypt(data []byte) ([]byte, error) {
 	}
 
 	nonce, ciphertext := data[:nonceSize], data[nonceSize:]
+	fmt.Println("nonce", nonce)
+	fmt.Println("ciphertext", ciphertext)
+	fmt.Println("salt", salt)
+	plaintext, err := gcm.Open(nil, nonce, ciphertext, nil)
+	if err != nil {
+		return nil, err
+	}
 
-	return gcm.Open(nil, nonce, ciphertext, nil)
+	return plaintext, nil
+}
+
+func DeriveKey(password, salt []byte) ([]byte, []byte, error) {
+	if salt == nil {
+		salt = make([]byte, 32)
+		if _, err := rand.Read(salt); err != nil {
+			return nil, nil, err
+		}
+	}
+
+	key, err := scrypt.Key(password, salt, 1048576, 8, 1, 32)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return key, salt, nil
 }

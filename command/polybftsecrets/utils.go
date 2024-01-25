@@ -53,7 +53,7 @@ func GetSecretsManager(dataPath, configPath string, insecureLocalStore bool) (se
 	// to raise awareness that it should be only used in development/testing environments.
 	// Production setups should use one of the supported secrets managers
 	if !insecureLocalStore {
-		helper.SetupEncryptedLocalSecretsManager(dataPath)
+		return helper.SetupEncryptedLocalSecretsManager(dataPath)
 	}
 
 	return helper.SetupLocalSecretsManager(dataPath)

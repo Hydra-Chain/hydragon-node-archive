@@ -36,12 +36,14 @@ const (
 	ValidatorBLSSignature = "validator-bls-signature"
 )
 
+type SecretType string
+
 // Define constant file names for the local StorageManager
 const (
-	ValidatorKeyLocal          = "validator.key"
-	ValidatorBLSKeyLocal       = "validator-bls.key"
-	NetworkKeyLocal            = "libp2p.key"
-	ValidatorBLSSignatureLocal = "validator.sig"
+	ValidatorKeyLocal          SecretType = "validator.key"
+	ValidatorBLSKeyLocal       SecretType = "validator-bls.key"
+	NetworkKeyLocal            SecretType = "libp2p.key"
+	ValidatorBLSSignatureLocal SecretType = "validator.sig"
 )
 
 // Define constant folder names for the local StorageManager
@@ -69,6 +71,9 @@ const (
 
 	// GCPSSM pertains to the Google Cloud Computing secret store manager
 	GCPSSM SecretsManagerType = "gcp-ssm"
+
+	// Encrypted Local pertains to the local FS but the data is encrypted with password
+	EncryptedLocal SecretsManagerType = "encrypted-local"
 )
 
 // SecretsManager defines the base public interface that all
