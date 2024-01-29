@@ -38,7 +38,6 @@ func SecretsManagerFactory(
 	prompt := NewPrompt()
 	encryption := NewEncryption()
 	logger := params.Logger.Named(string(secrets.EncryptedLocal))
-	// Set up the base object
 	esm := &EncryptedLocalSecretsManager{
 		prompt,
 		logger,
