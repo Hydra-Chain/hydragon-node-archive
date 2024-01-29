@@ -8,14 +8,14 @@ import (
 	"github.com/hashicorp/go-hclog"
 )
 
-// LocalSecretsManager is a SecretsManager that
+// EncryptedLocalSecretsManager is a SecretsManager that
 // stores secrets encrypted locally on disk
 type EncryptedLocalSecretsManager struct {
 	prompt *Prompt
 	logger hclog.Logger
 	*local.LocalSecretsManager
-	cryptHandler CryptHandler
-	pwd          []byte
+	encryption Encryption
+	pwd        []byte
 }
 
 // SecretsManagerFactory implements the factory method
@@ -35,27 +35,23 @@ func SecretsManagerFactory(
 		return nil, errors.New("invalid type assertion")
 	}
 
-	prompt := NewPrompt("")
-	cryptHandler := NewCryptHandler(
-		prompt,
-	)
-
+	prompt := NewPrompt()
+	encryption := NewEncryption()
 	logger := params.Logger.Named(string(secrets.EncryptedLocal))
 	// Set up the base object
 	esm := &EncryptedLocalSecretsManager{
 		prompt,
 		logger,
 		localSM,
-		cryptHandler,
+		encryption,
 		nil,
 	}
 
-	return esm, esm.Setup()
+	return esm, nil
 }
 
 func (esm *EncryptedLocalSecretsManager) SetSecret(name string, value []byte) error {
 	esm.logger.Info("Configuring secret", "name", name)
-
 	onSetHandler, ok := onSetHandlers[name]
 	if ok {
 		res, err := onSetHandler(esm, name, value)
@@ -70,38 +66,34 @@ func (esm *EncryptedLocalSecretsManager) SetSecret(name string, value []byte) er
 }
 
 func (esm *EncryptedLocalSecretsManager) GetSecret(name string) ([]byte, error) {
-	encryptedValue, err := esm.LocalSecretsManager.GetSecret(name)
+	value, err := esm.LocalSecretsManager.GetSecret(name)
 	if err != nil {
 		return nil, err
 	}
 
-	if esm.pwd == nil || len(esm.pwd) == 0 {
-		esm.pwd, err = esm.prompt.InputPassword(false)
+	onGetHandler, ok := onGetHandlers[name]
+	if ok {
+		value, err = onGetHandler(esm, name, value)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	return esm.cryptHandler.Decrypt(encryptedValue, esm.pwd)
+	return value, nil
 }
 
-type SecretHelper interface {
-	beforeSet(name string, value []byte) error
-	afterSet(name string) ([]byte, error)
-}
+// --------- Custom Additional handlers ---------
 
-type OnSetHandlerFunc func(esm *EncryptedLocalSecretsManager, name string, value []byte) ([]byte, error)
+type AdditionalHandlerFunc func(esm *EncryptedLocalSecretsManager, name string, value []byte) ([]byte, error)
 
-var onSetHandlers = map[string]OnSetHandlerFunc{
+var onSetHandlers = map[string]AdditionalHandlerFunc{
 	secrets.NetworkKey:      baseOnSetHandler,
 	secrets.ValidatorBLSKey: baseOnSetHandler,
 	secrets.ValidatorKey:    baseOnSetHandler,
 }
 
 func baseOnSetHandler(esm *EncryptedLocalSecretsManager, name string, value []byte) ([]byte, error) {
-	// hexValue := hex.EncodeToString(value)
 	esm.logger.Info("Here is the raw hex value of your secret. \nPlease copy it and store it in a safe place.", name, string(value))
-
 	confirmValue, err := esm.prompt.DefaultPrompt("Please rewrite the secret value to confirm that you have copied it down correctly.", "")
 	if err != nil {
 		return nil, err
@@ -121,7 +113,7 @@ func baseOnSetHandler(esm *EncryptedLocalSecretsManager, name string, value []by
 		}
 	}
 
-	encryptedValue, err := esm.cryptHandler.Encrypt(value, esm.pwd)
+	encryptedValue, err := esm.encryption.Encrypt(value, esm.pwd)
 	if err != nil {
 		return nil, err
 	}
@@ -129,6 +121,20 @@ func baseOnSetHandler(esm *EncryptedLocalSecretsManager, name string, value []by
 	return encryptedValue, nil
 }
 
-func ecdsaKeyOnSetHandler(esm *EncryptedLocalSecretsManager, name string, value []byte) ([]byte, error) {
-	return nil, nil
+var onGetHandlers = map[string]AdditionalHandlerFunc{
+	secrets.NetworkKey:      baseOnGetHandler,
+	secrets.ValidatorBLSKey: baseOnGetHandler,
+	secrets.ValidatorKey:    baseOnGetHandler,
+}
+
+func baseOnGetHandler(esm *EncryptedLocalSecretsManager, name string, value []byte) ([]byte, error) {
+	if esm.pwd == nil || len(esm.pwd) == 0 {
+		var err error
+		esm.pwd, err = esm.prompt.InputPassword(false)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return esm.encryption.Decrypt(value, esm.pwd)
 }

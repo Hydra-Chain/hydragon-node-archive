@@ -14,24 +14,19 @@ type PasswordHandler interface {
 	InputPassword(bool) ([]byte, error)
 }
 
-type CryptHandler interface {
+type Encryption interface {
 	Encrypt(data []byte, pwd []byte) ([]byte, error)
 	Decrypt(data []byte, pwd []byte) ([]byte, error)
 }
 
-type cryptHandler struct {
-	passHandler PasswordHandler
-	pwd         string
+type encryption struct {
 }
 
-func NewCryptHandler(passHandler PasswordHandler) CryptHandler {
-	return &cryptHandler{
-		passHandler: passHandler,
-		pwd:         "",
-	}
+func NewEncryption() Encryption {
+	return &encryption{}
 }
 
-func (ch *cryptHandler) Encrypt(data []byte, pwd []byte) ([]byte, error) {
+func (ch *encryption) Encrypt(data []byte, pwd []byte) ([]byte, error) {
 	key, salt, err := DeriveKey(pwd, nil)
 	if err != nil {
 		return nil, err
@@ -57,7 +52,7 @@ func (ch *cryptHandler) Encrypt(data []byte, pwd []byte) ([]byte, error) {
 	return append(cipherText, salt...), nil
 }
 
-func (ch *cryptHandler) Decrypt(data []byte, pwd []byte) ([]byte, error) {
+func (ch *encryption) Decrypt(data []byte, pwd []byte) ([]byte, error) {
 	salt, data := data[len(data)-32:], data[:len(data)-32]
 	key, _, err := DeriveKey(pwd, salt)
 	if err != nil {

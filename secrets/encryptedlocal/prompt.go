@@ -20,14 +20,10 @@ var (
 )
 
 type Prompt struct {
-	terminal *term.Terminal
 }
 
-func NewPrompt(name string) *Prompt {
-	terminal := term.NewTerminal(os.Stdin, name)
-	return &Prompt{
-		terminal,
-	}
+func NewPrompt() *Prompt {
+	return &Prompt{}
 }
 
 func (p *Prompt) GeneratePassword() ([]byte, error) {
