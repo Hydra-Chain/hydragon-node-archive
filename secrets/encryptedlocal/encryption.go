@@ -4,7 +4,6 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
-	"fmt"
 	"io"
 
 	"golang.org/x/crypto/scrypt"
@@ -81,9 +80,6 @@ func (ch *cryptHandler) Decrypt(data []byte, pwd []byte) ([]byte, error) {
 	}
 
 	nonce, ciphertext := data[:nonceSize], data[nonceSize:]
-	fmt.Println("nonce", nonce)
-	fmt.Println("ciphertext", ciphertext)
-	fmt.Println("salt", salt)
 	plaintext, err := gcm.Open(nil, nonce, ciphertext, nil)
 	if err != nil {
 		return nil, err

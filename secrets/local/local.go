@@ -74,28 +74,28 @@ func (l *LocalSecretsManager) Setup() error {
 	l.secretPathMap[secrets.ValidatorKey] = filepath.Join(
 		l.path,
 		secrets.ConsensusFolderLocal,
-		secrets.ValidatorKeyLocal,
+		string(secrets.ValidatorKeyLocal),
 	)
 
 	// baseDir/consensus/validator-bls.key
 	l.secretPathMap[secrets.ValidatorBLSKey] = filepath.Join(
 		l.path,
 		secrets.ConsensusFolderLocal,
-		secrets.ValidatorBLSKeyLocal,
+		string(secrets.ValidatorBLSKeyLocal),
 	)
 
 	// baseDir/consensus/validator.sig
 	l.secretPathMap[secrets.ValidatorBLSSignature] = filepath.Join(
 		l.path,
 		secrets.ConsensusFolderLocal,
-		secrets.ValidatorBLSSignatureLocal,
+		string(secrets.ValidatorBLSSignatureLocal),
 	)
 
 	// baseDir/libp2p/libp2p.key
 	l.secretPathMap[secrets.NetworkKey] = filepath.Join(
 		l.path,
 		secrets.NetworkFolderLocal,
-		secrets.NetworkKeyLocal,
+		string(secrets.NetworkKeyLocal),
 	)
 
 	return nil

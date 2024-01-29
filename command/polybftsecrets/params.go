@@ -6,11 +6,13 @@ import (
 	"strings"
 
 	"github.com/0xPolygon/polygon-edge/command"
+	bls "github.com/0xPolygon/polygon-edge/consensus/polybft/signer"
 	"github.com/0xPolygon/polygon-edge/consensus/polybft/wallet"
 	"github.com/0xPolygon/polygon-edge/secrets"
 	"github.com/0xPolygon/polygon-edge/secrets/helper"
 	"github.com/0xPolygon/polygon-edge/types"
 	"github.com/spf13/cobra"
+	ethWallet "github.com/umbracle/ethgo/wallet"
 )
 
 const (
@@ -22,6 +24,8 @@ const (
 	outputFlag             = "output"
 	chainIDFlag            = "chain-id"
 	networkKeyFlag         = "network-key"
+	ecdsaKeyFlag           = "ecdsa-key"
+	blsKeyFlag             = "bls-key"
 
 	// maxInitNum is the maximum value for "num" flag
 	maxInitNum = 30
@@ -45,6 +49,8 @@ type initParams struct {
 	chainID int64
 
 	networkKey string
+	ecdsaKey   string
+	blsKey     string
 }
 
 func (ip *initParams) validateFlags() error {
@@ -86,6 +92,20 @@ func (ip *initParams) setFlags(cmd *cobra.Command) {
 		networkKeyFlag,
 		"",
 		"the flag providing already created network key to be used",
+	)
+
+	cmd.Flags().StringVar(
+		&ip.ecdsaKey,
+		ecdsaKeyFlag,
+		"",
+		"the flag providing already created ecdsa key to be used",
+	)
+
+	cmd.Flags().StringVar(
+		&ip.blsKey,
+		blsKeyFlag,
+		"",
+		"the flag providing already created bls key to be used",
 	)
 
 	// Don't accept data-dir and config flags because they are related to different secrets managers.
@@ -188,7 +208,12 @@ func (ip *initParams) initKeys(secretsManager secrets.SecretsManager) ([]string,
 			}
 
 			generated = append(generated, secrets.NetworkKey)
+		} else {
+			if ip.networkKey != "" {
+				return generated, fmt.Errorf("network-key already exists")
+			}
 		}
+
 	}
 
 	if ip.generatesAccount {
@@ -198,9 +223,31 @@ func (ip *initParams) initKeys(secretsManager secrets.SecretsManager) ([]string,
 		)
 
 		if !secretsManager.HasSecret(secrets.ValidatorKey) && !secretsManager.HasSecret(secrets.ValidatorBLSKey) {
-			a, err = wallet.GenerateAccount()
-			if err != nil {
-				return generated, fmt.Errorf("error generating account: %w", err)
+			if ip.ecdsaKey != "" && ip.blsKey != "" {
+				blsKey, err := bls.UnmarshalPrivateKey([]byte(ip.blsKey))
+				if err != nil {
+					return nil, fmt.Errorf("failed to retrieve bls key: %w", err)
+				}
+
+				ecdsaRaw, err := hex.DecodeString(ip.ecdsaKey)
+				if err != nil {
+					return nil, fmt.Errorf("failed to retrieve ecdsa key: %w", err)
+				}
+
+				key, err := ethWallet.NewWalletFromPrivKey(ecdsaRaw)
+				if err != nil {
+					return nil, fmt.Errorf("failed to retrieve ecdsa key: %w", err)
+				}
+
+				a = &wallet.Account{
+					Ecdsa: key,
+					Bls:   blsKey,
+				}
+			} else {
+				a, err = wallet.GenerateAccount()
+				if err != nil {
+					return generated, fmt.Errorf("error generating account: %w", err)
+				}
 			}
 
 			if err = a.Save(secretsManager); err != nil {
@@ -209,6 +256,10 @@ func (ip *initParams) initKeys(secretsManager secrets.SecretsManager) ([]string,
 
 			generated = append(generated, secrets.ValidatorKey, secrets.ValidatorBLSKey)
 		} else {
+			if ip.ecdsaKey != "" || ip.blsKey != "" {
+				return generated, fmt.Errorf("ecdsa-key or bls-key already exists")
+			}
+
 			a, err = wallet.NewAccountFromSecret(secretsManager)
 			if err != nil {
 				return generated, fmt.Errorf("error loading account: %w", err)

@@ -44,6 +44,43 @@ func (p *Prompt) GeneratePassword() ([]byte, error) {
 	return bytePassword, nil
 }
 
+type MnemonicGenerator interface {
+	GenerateMnemonic() (string, error)
+}
+
+func (p *Prompt) GenerateMnemonic(generator MnemonicGenerator) (string, error) {
+	fmt.Println("\nWe must generate a mnemonic which will represent your node account.")
+	fmt.Println("\nKeep it safe and do not share it with anyone.")
+	fmt.Println("\nYou will need this mnemonic to recover your node account if you lose it.")
+	start, err := p.DefaultPrompt("Do you want to start the process? [y/n]", "y")
+	if err != nil {
+		return "", err
+	}
+
+	start = strings.ToLower(start)
+	if start != "y" {
+		return "", ErrTerminatedOperation
+	}
+
+	mnemonic, err := generator.GenerateMnemonic()
+
+	fmt.Println("\nHere is your mnemonic. Please copy it and store it in a safe place.")
+	repeatMnemonic, err := p.DefaultPrompt("Please rewrite the mnemonic to confirm that you have copied it down correctly.", "")
+	if err != nil {
+		return "", err
+	}
+
+	if repeatMnemonic != mnemonic {
+		return "", errors.New("mnemonic mismatch")
+	}
+
+	if err != nil {
+		return "", err
+	}
+
+	return mnemonic, nil
+}
+
 func (p *Prompt) InputPassword(verify bool) ([]byte, error) {
 	return p.promptUntil(func() ([]byte, error) {
 		if verify {

@@ -69,6 +69,7 @@ require (
 	github.com/quasilyte/go-ruleguard/dsl v0.3.22
 	github.com/sethvargo/go-retry v0.2.4
 	golang.org/x/sync v0.4.0
+	golang.org/x/term v0.16.0
 	google.golang.org/genproto v0.0.0-20230711160842-782d3b101e98
 	gopkg.in/DataDog/dd-trace-go.v1 v1.55.0
 	pgregory.net/rapid v1.1.0
@@ -99,7 +100,6 @@ require (
 	go.uber.org/dig v1.16.1 // indirect
 	go.uber.org/fx v1.19.2 // indirect
 	golang.org/x/exp v0.0.0-20230725012225-302865e7556b // indirect
-	golang.org/x/term v0.16.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20230711160842-782d3b101e98 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20230711160842-782d3b101e98 // indirect
 	nhooyr.io/websocket v1.8.7 // indirect

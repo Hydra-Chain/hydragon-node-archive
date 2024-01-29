@@ -55,34 +55,18 @@ func SecretsManagerFactory(
 
 func (esm *EncryptedLocalSecretsManager) SetSecret(name string, value []byte) error {
 	esm.logger.Info("Configuring secret", "name", name)
-	// hexValue := hex.EncodeToString(value)
-	esm.logger.Info("Here is the raw hex value of your secret. \nPlease copy it and store it in a safe place.", name, string(value))
 
-	confirmValue, err := esm.prompt.DefaultPrompt("Please rewrite the secret value to confirm that you have copied it down correctly.", "")
-	if err != nil {
-		return err
-	}
-
-	if confirmValue != string(value) {
-		esm.logger.Error("The secret value you entered does not match the original value. Please try again.")
-		return errors.New("secret value mismatch")
-	} else {
-		esm.logger.Info("The secret value you entered matches the original value. Continuing.")
-	}
-
-	if esm.pwd == nil || len(esm.pwd) == 0 {
-		esm.pwd, err = esm.prompt.GeneratePassword()
+	onSetHandler, ok := onSetHandlers[secrets.SecretType(name)]
+	if ok {
+		res, err := onSetHandler(esm, name, value)
 		if err != nil {
 			return err
 		}
+
+		value = res
 	}
 
-	encryptedValue, err := esm.cryptHandler.Encrypt(value, esm.pwd)
-	if err != nil {
-		return err
-	}
-
-	return esm.LocalSecretsManager.SetSecret(name, encryptedValue)
+	return esm.LocalSecretsManager.SetSecret(name, value)
 }
 
 func (esm *EncryptedLocalSecretsManager) GetSecret(name string) ([]byte, error) {
@@ -106,6 +90,45 @@ type SecretHelper interface {
 	afterSet(name string) ([]byte, error)
 }
 
-type SecretHelperFactory func() (SecretHelper, error)
+type OnSetHandlerFunc func(esm *EncryptedLocalSecretsManager, name string, value []byte) ([]byte, error)
 
-var secretHandlers = map[secrets.SecretType]SecretHelperFactory{}
+var onSetHandlers = map[secrets.SecretType]OnSetHandlerFunc{
+	secrets.NetworkKey:      baseOnSetHandler,
+	secrets.ValidatorBLSKey: baseOnSetHandler,
+	secrets.ValidatorKey:    baseOnSetHandler,
+}
+
+func baseOnSetHandler(esm *EncryptedLocalSecretsManager, name string, value []byte) ([]byte, error) {
+	// hexValue := hex.EncodeToString(value)
+	esm.logger.Info("Here is the raw hex value of your secret. \nPlease copy it and store it in a safe place.", name, string(value))
+
+	confirmValue, err := esm.prompt.DefaultPrompt("Please rewrite the secret value to confirm that you have copied it down correctly.", "")
+	if err != nil {
+		return nil, err
+	}
+
+	if confirmValue != string(value) {
+		esm.logger.Error("The secret value you entered does not match the original value. Please try again.")
+		return nil, errors.New("secret value mismatch")
+	} else {
+		esm.logger.Info("The secret value you entered matches the original value. Continuing.")
+	}
+
+	if esm.pwd == nil || len(esm.pwd) == 0 {
+		esm.pwd, err = esm.prompt.GeneratePassword()
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	encryptedValue, err := esm.cryptHandler.Encrypt(value, esm.pwd)
+	if err != nil {
+		return nil, err
+	}
+
+	return encryptedValue, nil
+}
+
+func ecdsaKeyOnSetHandler(esm *EncryptedLocalSecretsManager, name string, value []byte) ([]byte, error) {
+	return nil, nil
+}
