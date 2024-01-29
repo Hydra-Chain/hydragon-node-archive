@@ -22,7 +22,7 @@ import (
 	"github.com/0xPolygon/polygon-edge/types"
 )
 
-// SetupLocalSecretsManager is a helper method for boilerplate local secrets manager setup
+// SetupEncryptedLocalSecretsManager is a helper method for encrypted local secrets manager setup
 func SetupEncryptedLocalSecretsManager(dataDir string) (secrets.SecretsManager, error) {
 	return encryptedlocal.SecretsManagerFactory(
 		nil, // Local secrets manager doesn't require a config
