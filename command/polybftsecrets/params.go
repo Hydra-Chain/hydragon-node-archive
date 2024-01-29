@@ -166,6 +166,9 @@ func (ip *initParams) setFlags(cmd *cobra.Command) {
 	cmd.MarkFlagsMutuallyExclusive(AccountConfigFlag, networkKeyFlag)
 	cmd.MarkFlagsMutuallyExclusive(AccountConfigFlag, blsKeyFlag)
 	cmd.MarkFlagsMutuallyExclusive(AccountConfigFlag, ecdsaKeyFlag)
+
+	// Currently we handle ecdsaKey and blsKey generation from flag together only.
+	cmd.MarkFlagsRequiredTogether(ecdsaKeyFlag, blsKeyFlag)
 }
 
 func (ip *initParams) Execute() (Results, error) {
@@ -221,7 +224,6 @@ func (ip *initParams) initKeys(secretsManager secrets.SecretsManager) ([]string,
 				return generated, fmt.Errorf("network-key already exists")
 			}
 		}
-
 	}
 
 	if ip.generatesAccount {
@@ -234,17 +236,17 @@ func (ip *initParams) initKeys(secretsManager secrets.SecretsManager) ([]string,
 			if ip.ecdsaKey != "" && ip.blsKey != "" {
 				blsKey, err := bls.UnmarshalPrivateKey([]byte(ip.blsKey))
 				if err != nil {
-					return nil, fmt.Errorf("failed to retrieve bls key: %w", err)
+					return generated, fmt.Errorf("failed to retrieve bls key: %w", err)
 				}
 
 				ecdsaRaw, err := hex.DecodeString(ip.ecdsaKey)
 				if err != nil {
-					return nil, fmt.Errorf("failed to retrieve ecdsa key: %w", err)
+					return generated, fmt.Errorf("failed to retrieve ecdsa key: %w", err)
 				}
 
 				key, err := ethWallet.NewWalletFromPrivKey(ecdsaRaw)
 				if err != nil {
-					return nil, fmt.Errorf("failed to retrieve ecdsa key: %w", err)
+					return generated, fmt.Errorf("failed to retrieve ecdsa key: %w", err)
 				}
 
 				a = &wallet.Account{
