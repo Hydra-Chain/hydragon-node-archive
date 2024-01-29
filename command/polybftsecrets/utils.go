@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/0xPolygon/polygon-edge/secrets"
-	"github.com/0xPolygon/polygon-edge/secrets/encryptedlocal"
 	"github.com/0xPolygon/polygon-edge/secrets/helper"
 )
 
@@ -56,9 +55,4 @@ func GetSecretsManager(dataPath, configPath string, insecureLocalStore bool) (se
 	}
 
 	return helper.SetupLocalSecretsManager(dataPath)
-}
-
-func isEncryptedLocalSecretsManager(sm secrets.SecretsManager) bool {
-	_, ok := sm.(*encryptedlocal.EncryptedLocalSecretsManager)
-	return ok
 }
