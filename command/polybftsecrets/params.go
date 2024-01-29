@@ -108,15 +108,6 @@ func (ip *initParams) setFlags(cmd *cobra.Command) {
 		"the flag providing already created bls key to be used",
 	)
 
-	// Don't accept data-dir and config flags because they are related to different secrets managers.
-	// data-dir is about the local FS as secrets storage, config is about remote secrets manager.
-	cmd.MarkFlagsMutuallyExclusive(AccountDirFlag, AccountConfigFlag)
-
-	// num flag should be used with data-dir flag only so it should not be used with config flag.
-	cmd.MarkFlagsMutuallyExclusive(numFlag, AccountConfigFlag)
-
-	cmd.MarkFlagsMutuallyExclusive(numFlag, networkKeyFlag)
-
 	cmd.Flags().BoolVar(
 		&ip.generatesAccount,
 		accountFlag,
@@ -158,6 +149,23 @@ func (ip *initParams) setFlags(cmd *cobra.Command) {
 		command.DefaultChainID,
 		"the ID of the chain",
 	)
+
+	// Don't accept data-dir and config flags because they are related to different secrets managers.
+	// data-dir is about the local FS as secrets storage, config is about remote secrets manager.
+	cmd.MarkFlagsMutuallyExclusive(AccountDirFlag, AccountConfigFlag)
+
+	// num flag should be used with data-dir flag only so it should not be used with config flag.
+	cmd.MarkFlagsMutuallyExclusive(numFlag, AccountConfigFlag)
+
+	// Encryptedlocal secrets manager with preset keys can be setup for a single bunch of secrets only, so num flag is not allowed.
+	cmd.MarkFlagsMutuallyExclusive(numFlag, networkKeyFlag)
+	cmd.MarkFlagsMutuallyExclusive(numFlag, blsKeyFlag)
+	cmd.MarkFlagsMutuallyExclusive(numFlag, ecdsaKeyFlag)
+
+	// network-key, ecdsa-key and bls-key flags should be used with data-dir flag only because they are related to local FS.
+	cmd.MarkFlagsMutuallyExclusive(AccountConfigFlag, networkKeyFlag)
+	cmd.MarkFlagsMutuallyExclusive(AccountConfigFlag, blsKeyFlag)
+	cmd.MarkFlagsMutuallyExclusive(AccountConfigFlag, ecdsaKeyFlag)
 }
 
 func (ip *initParams) Execute() (Results, error) {
