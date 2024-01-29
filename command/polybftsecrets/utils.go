@@ -49,9 +49,8 @@ func GetSecretsManager(dataPath, configPath string, insecureLocalStore bool) (se
 		return helper.InitCloudSecretsManager(secretsConfig)
 	}
 
-	// Storing secrets on a local file system should only be allowed with --insecure flag,
-	// to raise awareness that it should be only used in development/testing environments.
-	// Production setups should use one of the supported secrets managers
+	// Storing secrets on a local file system should only be allowed when files encrypted with password only.
+	// Otherwsie --insecure flag must be added
 	if !insecureLocalStore {
 		return helper.SetupEncryptedLocalSecretsManager(dataPath)
 	}
