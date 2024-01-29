@@ -36,14 +36,12 @@ const (
 	ValidatorBLSSignature = "validator-bls-signature"
 )
 
-type SecretType string
-
 // Define constant file names for the local StorageManager
 const (
-	ValidatorKeyLocal          SecretType = "validator.key"
-	ValidatorBLSKeyLocal       SecretType = "validator-bls.key"
-	NetworkKeyLocal            SecretType = "libp2p.key"
-	ValidatorBLSSignatureLocal SecretType = "validator.sig"
+	ValidatorKeyLocal          = "validator.key"
+	ValidatorBLSKeyLocal       = "validator-bls.key"
+	NetworkKeyLocal            = "libp2p.key"
+	ValidatorBLSSignatureLocal = "validator.sig"
 )
 
 // Define constant folder names for the local StorageManager

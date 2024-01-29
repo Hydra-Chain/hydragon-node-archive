@@ -56,7 +56,7 @@ func SecretsManagerFactory(
 func (esm *EncryptedLocalSecretsManager) SetSecret(name string, value []byte) error {
 	esm.logger.Info("Configuring secret", "name", name)
 
-	onSetHandler, ok := onSetHandlers[secrets.SecretType(name)]
+	onSetHandler, ok := onSetHandlers[name]
 	if ok {
 		res, err := onSetHandler(esm, name, value)
 		if err != nil {
@@ -92,7 +92,7 @@ type SecretHelper interface {
 
 type OnSetHandlerFunc func(esm *EncryptedLocalSecretsManager, name string, value []byte) ([]byte, error)
 
-var onSetHandlers = map[secrets.SecretType]OnSetHandlerFunc{
+var onSetHandlers = map[string]OnSetHandlerFunc{
 	secrets.NetworkKey:      baseOnSetHandler,
 	secrets.ValidatorBLSKey: baseOnSetHandler,
 	secrets.ValidatorKey:    baseOnSetHandler,
