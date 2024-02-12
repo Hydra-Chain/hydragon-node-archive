@@ -41,10 +41,10 @@ func initValidatorSet(polyBFTConfig PolyBFTConfig, transition *state.Transition)
 			MinDelegation: big.NewInt(minDelegation),
 			EpochSize:     new(big.Int).SetUint64(polyBFTConfig.EpochSize),
 		},
-		NewBls:      contracts.BLSContract,
-		Governance:  polyBFTConfig.Governance,
-		Validators:  initialValidators,
-		LiquidToken: contracts.LiquidityTokenContract,
+		NewBls:        contracts.BLSContract,
+		Governance:    polyBFTConfig.Governance,
+		NewValidators: initialValidators,
+		LiquidToken:   contracts.LiquidityTokenContract,
 	}
 
 	input, err := initFn.EncodeAbi()
@@ -54,6 +54,25 @@ func initValidatorSet(polyBFTConfig PolyBFTConfig, transition *state.Transition)
 
 	return callContract(contracts.SystemCaller,
 		contracts.ValidatorSetContract, input, "ValidatorSet.initialize", transition)
+}
+
+// initRewardPool initializes RewardPool SC
+func initRewardPool(polybftConfig PolyBFTConfig, transition *state.Transition) error {
+	initFn := &contractsapi.InitializeRewardPoolFn{
+		NewValidatorSet:  contracts.ValidatorSetContract,
+		NewRewardWallet:  types.ZeroAddress, // TODO: Remove reward wallet or fully implement it in the contracts
+		NewMinDelegation: big.NewInt(minDelegation),
+		// TODO: AprManager is temporary solution to enable update in the parameters. Remove it when "Dynamic APR variables" epic is finished
+		AprManager: polybftConfig.Governance,
+	}
+
+	input, err := initFn.EncodeAbi()
+	if err != nil {
+		return fmt.Errorf("RewardPool.initialize params encoding failed: %w", err)
+	}
+
+	return callContract(contracts.SystemCaller,
+		contracts.RewardPoolContract, input, "RewardPool.initialize", transition)
 }
 
 func initLiquidityToken(polyBFTConfig PolyBFTConfig, transition *state.Transition) error {

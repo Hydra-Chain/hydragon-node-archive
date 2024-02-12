@@ -183,10 +183,10 @@ func GenesisPostHookFactory(config *chain.Chain, engineName string) func(txn *st
 		// 	return err
 		// }
 
-		// // initialize RewardPool SC
-		// if err = initRewardPool(polyBFTConfig, transition); err != nil {
-		// 	return err
-		// }
+		// initialize RewardPool SC
+		if err = initRewardPool(polyBFTConfig, transition); err != nil {
+			return err
+		}
 
 		// check if there are Bridge Allow List Admins and Bridge Block List Admins
 		// and if there are, get the first address as the Admin
