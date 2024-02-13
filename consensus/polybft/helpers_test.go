@@ -85,7 +85,7 @@ func createTestCommitEpochInput(t *testing.T, epochID uint64,
 
 func createTestRewardToDistributeValue(t *testing.T, transition *state.Transition) *big.Int {
 	stateProvider := NewStateProvider(transition)
-	systemState := NewSystemState(contracts.ValidatorSetContract, contracts.StateReceiverContract, stateProvider)
+	systemState := NewSystemState(contracts.ValidatorSetContract, contracts.RewardPoolContract, contracts.StateReceiverContract, stateProvider)
 
 	blockchainMock := new(blockchainMock)
 	blockchainMock.On("GetStateProviderForBlock", mock.Anything).Return(nil, nil).Once()

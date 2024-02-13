@@ -41,9 +41,10 @@ func initValidatorSet(polyBFTConfig PolyBFTConfig, transition *state.Transition)
 			MinDelegation: big.NewInt(minDelegation),
 			EpochSize:     new(big.Int).SetUint64(polyBFTConfig.EpochSize),
 		},
-		NewBls:        contracts.BLSContract,
-		Governance:    polyBFTConfig.Governance,
 		NewValidators: initialValidators,
+		NewBls:        contracts.BLSContract,
+		NewRewardPool: contracts.RewardPoolContract,
+		Governance:    polyBFTConfig.Governance,
 		LiquidToken:   contracts.LiquidityTokenContract,
 	}
 
@@ -60,7 +61,7 @@ func initValidatorSet(polyBFTConfig PolyBFTConfig, transition *state.Transition)
 func initRewardPool(polybftConfig PolyBFTConfig, transition *state.Transition) error {
 	initFn := &contractsapi.InitializeRewardPoolFn{
 		NewValidatorSet:  contracts.ValidatorSetContract,
-		NewRewardWallet:  types.ZeroAddress, // TODO: Remove reward wallet or fully implement it in the contracts
+		NewRewardWallet:  types.Address{0x22}, // TODO: Remove reward wallet or fully implement it in the contracts
 		NewMinDelegation: big.NewInt(minDelegation),
 		// TODO: AprManager is temporary solution to enable update in the parameters. Remove it when "Dynamic APR variables" epic is finished
 		AprManager: polybftConfig.Governance,

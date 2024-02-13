@@ -126,12 +126,12 @@ func TestIntegration_CommitEpoch(t *testing.T) {
 		err := initLiquidityToken(polyBFTConfig, transition)
 		require.NoError(t, err)
 
-		// init ValidatorSet
-		err = initValidatorSet(polyBFTConfig, transition)
-		require.NoError(t, err)
-
 		// init RewardPool
 		err = initRewardPool(polyBFTConfig, transition)
+		require.NoError(t, err)
+
+		// init ValidatorSet
+		err = initValidatorSet(polyBFTConfig, transition)
 		require.NoError(t, err)
 
 		// delegate amounts to validators

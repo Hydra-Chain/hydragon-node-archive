@@ -586,11 +586,13 @@ func (c *consensusRuntime) calculateCommitEpochInput(
 			EndBlock:   new(big.Int).SetUint64(currentBlock.Number + 1),
 			EpochRoot:  types.Hash{},
 		},
+		EpochSize: big.NewInt(int64(c.config.PolyBFTConfig.EpochSize)), // TODO: epochSize must be part of the contract config and not an argument
 	}
 
 	distributeRewards := &contractsapi.DistributeRewardsForRewardPoolFn{
-		EpochID: new(big.Int).SetUint64(epochID),
-		Uptime:  uptime,
+		EpochID:   new(big.Int).SetUint64(epochID),
+		Uptime:    uptime,
+		EpochSize: big.NewInt(int64(c.config.PolyBFTConfig.EpochSize)),
 	}
 
 	return commitEpoch, distributeRewards, nil
