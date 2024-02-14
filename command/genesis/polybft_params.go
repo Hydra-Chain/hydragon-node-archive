@@ -352,8 +352,9 @@ func (p *genesisParams) deployContracts(
 			artifact: contractsapi.RewardPool,
 			address:  contracts.RewardPoolContractV1,
 		},
-		{artifact: contractsapi.LiquidityToken,
-			address: contracts.LiquidityTokenContract,
+		{
+			artifact: contractsapi.LiquidityToken,
+			address:  contracts.LiquidityTokenContract,
 		},
 	}
 
