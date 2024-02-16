@@ -1,3 +1,5 @@
+# **Important Notice!**
+This repository marks the inception point of the Hydragon development, initially forked from the ```Polygon-Edge``` repository. For the most recent updates and ongoing development efforts, please refer to the ```hydragon-node``` repository.
 
 ![Banner](.github/banner.jpg)
 [![codecov](https://codecov.io/gh/0xPolygon/polygon-edge/branch/develop/graph/badge.svg?token=PXEADRC1IW)](https://codecov.io/gh/0xPolygon/polygon-edge)
